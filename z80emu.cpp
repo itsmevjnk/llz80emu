@@ -14,6 +14,7 @@ void z80emu::set_clkpin(bool state) {
 z80_pins_t z80emu::clock(z80_pinbits_t state) {
 	_clkpin = !_clkpin; // toggle clock pin
 
+	_pins.state = (_pins.state & _pins.dir) | (state & ~_pins.dir); // update pin state (only replacing input pin bits)
 	if (!(_pins.state & Z80_RESET)) {
 		/* reset pin pulled low */
 		_por = true;
@@ -28,11 +29,14 @@ z80_pins_t z80emu::clock(z80_pinbits_t state) {
 
 	if (_cycle) {
 		/* operate cycle */
-		_pins.state = state; // update pin state
 		if (_cycle->clock(_clkpin)) {
 			/* cycle has finished */
 		}
 	}
 
+	return _pins;
+}
+
+z80_pins_t z80emu::get_pins() {
 	return _pins;
 }

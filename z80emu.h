@@ -22,6 +22,8 @@ namespace llz80emu {
 
 		LLZ80EMU_API void set_clkpin(bool state); // set the clock pin state (without clocking)
 		LLZ80EMU_API z80_pins_t clock(z80_pinbits_t state); // clock the CPU by one half-cycle (rising edge or falling edge)
+
+		LLZ80EMU_API z80_pins_t get_pins(); // get pins without clocking
 	private:
 		bool _clkpin = false; // clock pin state (true = high, false = low) - this is synchronised with the RESET signal
 		bool _por = false; // whether power-on reset has been triggered in the CPU's lifetime
