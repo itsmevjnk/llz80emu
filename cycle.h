@@ -77,16 +77,16 @@ namespace llz80emu {
 		bool clock(bool clk) override;
 	};
 
-	typedef void (*z80_bogus_cycle_cb_t)(z80_registers_t& regs, z80_pins_t& pins); // callback for bogus cycle - called on the last half of the last cycle (used to implement instructions' quirks)
+	//typedef void (*z80_bogus_cycle_cb_t)(z80_registers_t& regs, z80_pins_t& pins); // callback for bogus cycle - called on the last half of the last cycle (used to implement instructions' quirks)
 	class z80_bogus_cycle : public z80_cycle {
 	public:
 		z80_bogus_cycle(z80_pins_t& pins, z80_registers_t& regs);
 
-		void reset(int cycles, z80_bogus_cycle_cb_t* last_half_cb = nullptr);
+		void reset(int cycles);
 		bool clock(bool clk) override;
 	private:
 		z80_registers_t& _regs; // CPU registers
 		int _cycles = 0; // number of cycles remaining
-		z80_bogus_cycle_cb_t* _last_half_cb = nullptr; // callback for the last half of the last cycle (null = no callback)
+		//z80_bogus_cycle_cb_t* _last_half_cb = nullptr; // callback for the last half of the last cycle (null = no callback)
 	};
 }

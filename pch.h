@@ -5,11 +5,13 @@
 #include <stdint.h>
 
 #include <stdexcept>
+#include <assert.h>
 
 /* our classes and stuff */
 #include "pins.h"
 #include "registers.h"
 #include "cycle.h"
+#include "instr_decoder.h"
 #include "z80emu.h"
 
 /* for MSVC */

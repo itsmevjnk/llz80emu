@@ -24,6 +24,16 @@ namespace llz80emu {
 		LLZ80EMU_API z80_pins_t clock(z80_pinbits_t state); // clock the CPU by one half-cycle (rising edge or falling edge)
 
 		LLZ80EMU_API z80_pins_t get_pins(); // get pins without clocking
+		LLZ80EMU_API z80_registers_t get_regs(); // get registers
+		LLZ80EMU_API void set_regs(const z80_registers_t& regs); // set registers
+
+		/* cycle transition methods - not supposed to be called by library consumer! */
+		void start_fetch_cycle(bool halt = false);
+		void start_mem_read_cycle(uint16_t addr, uint8_t& val_out);
+		void start_mem_write_cycle(uint16_t addr, uint8_t val);
+		void start_io_read_cycle(uint16_t addr, uint8_t& val_out);
+		void start_io_write_cycle(uint16_t addr, uint8_t val);
+		void start_bogus_cycle(int cycles);
 	private:
 		bool _clkpin = false; // clock pin state (true = high, false = low) - this is synchronised with the RESET signal
 		bool _por = false; // whether power-on reset has been triggered in the CPU's lifetime
@@ -40,5 +50,7 @@ namespace llz80emu {
 		z80_bogus_cycle _bogus_cycle; // bogus cycle
 
 		z80_cycle* _cycle = nullptr; // current cycle (null indicating we're in reset and so nothing can proceed)
+
+		z80_instr_decoder _instr; // instruction decoder and executor
 	};
 }

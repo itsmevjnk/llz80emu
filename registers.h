@@ -93,11 +93,23 @@ namespace llz80emu {
 		// TODO: prefixes
 	} z80_registers_t;
 
+	/* flag bits */
+	#define Z80_FLAGBIT_S			7
+	#define Z80_FLAGBIT_Z			6
+	#define Z80_FLAGBIT_F5			5
+	#define Z80_FLAGBIT_H			4
+	#define Z80_FLAGBIT_F3			3
+	#define Z80_FLAGBIT_PV			2
+	#define Z80_FLAGBIT_N			1
+	#define Z80_FLAGBIT_C			0
+
 	/* flag bitmasks */
-	#define Z80_FLAG_S				(1 << 7)
-	#define Z80_FLAG_Z				(1 << 6)
-	#define Z80_FLAG_H				(1 << 4)
-	#define Z80_FLAG_PV				(1 << 2)
-	#define Z80_FLAG_N				(1 << 1)
-	#define Z80_FLAG_C				(1 << 0)
+	#define Z80_FLAG_S				(1 << Z80_FLAGBIT_S)
+	#define Z80_FLAG_Z				(1 << Z80_FLAGBIT_Z)
+	#define Z80_FLAG_F5				(1 << Z80_FLAGBIT_F5)
+	#define Z80_FLAG_H				(1 << Z80_FLAGBIT_H)
+	#define Z80_FLAG_F3				(1 << Z80_FLAGBIT_F3)
+	#define Z80_FLAG_PV				(1 << Z80_FLAGBIT_PV)
+	#define Z80_FLAG_N				(1 << Z80_FLAGBIT_N)
+	#define Z80_FLAG_C				(1 << Z80_FLAGBIT_C)
 }

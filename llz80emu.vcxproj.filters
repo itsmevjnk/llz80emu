@@ -29,6 +29,9 @@
     <ClInclude Include="cycle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="instr_decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="z80emu.cpp">
@@ -50,6 +53,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bogus_cycle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instr_decoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instr_main_q1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instr_main_q2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -35,6 +35,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="instr_decoder.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="pins.h" />
     <ClInclude Include="registers.h" />
@@ -45,6 +46,9 @@
     <ClCompile Include="bogus_cycle.cpp" />
     <ClCompile Include="cycle.cpp" />
     <ClCompile Include="fetch_cycle.cpp" />
+    <ClCompile Include="instr_decoder.cpp" />
+    <ClCompile Include="instr_main_q1.cpp" />
+    <ClCompile Include="instr_main_q2.cpp" />
     <ClCompile Include="io_cycle.cpp" />
     <ClCompile Include="mem_cycle.cpp" />
     <ClCompile Include="rw_cycle_base.cpp" />

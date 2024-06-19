@@ -7,9 +7,9 @@ z80_bogus_cycle::z80_bogus_cycle(z80_pins_t& pins, z80_registers_t& regs) : z80_
 
 }
 
-void z80_bogus_cycle::reset(int cycles, z80_bogus_cycle_cb_t* last_half_cb) {
+void z80_bogus_cycle::reset(int cycles) {
 	_cycles = cycles;
-	_last_half_cb = last_half_cb;
+	//_last_half_cb = last_half_cb;
 }
 
 bool z80_bogus_cycle::clock(bool clk) {
@@ -19,7 +19,7 @@ bool z80_bogus_cycle::clock(bool clk) {
 		_cycles--;
 		if (_cycles == 0) {
 			/* falling edge of last cycle */
-			if (_last_half_cb) (*_last_half_cb)(_regs, _pins);
+			//if (_last_half_cb) (*_last_half_cb)(_regs, _pins);
 			return true;
 		}
 	}

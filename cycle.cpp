@@ -24,8 +24,8 @@ bool z80_cycle::handle_bus_release(bool clk) {
 	if (clk) {
 		if (!_bus_release) return false; // bus release was not staged
 
-		_pins = Z80_PINS_BUSREL;
 		sample_busreq(); // resample BUSREQ for next cycle
+		_pins = Z80_PINS_BUSREL;
 	}
 	return true;
 }
