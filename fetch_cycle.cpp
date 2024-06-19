@@ -39,7 +39,7 @@ bool z80_fetch_cycle::clock(bool clk) {
 			_pins.state =
 				(_pins.state | (Z80_MREQ | Z80_RD | Z80_M1)) // set MREQ, RD, M1
 				& ~(Z80_RFSH | Z80_A_ALL) // clear RFSH and address lines
-				| (_regs.REG_IR << Z80_PIN_A_BASE); // and set address bus to I + R (refresh reg)
+				| ((z80_pinbits_t)_regs.REG_IR << Z80_PIN_A_BASE); // and set address bus to I + R (refresh reg)
 		}
 		break;
 	case 5: // T3 low
