@@ -6,6 +6,8 @@ using namespace llz80emu;
 z80_instr_decoder::z80_instr_decoder(z80emu& ctx, z80_registers_t& regs) : _ctx(ctx), _regs(regs) {
 	uint8_t* r8[] = { &regs.REG_B, &regs.REG_C, &regs.REG_D, &regs.REG_E, &regs.REG_H, &regs.REG_L, nullptr /* (HL) */, &regs.REG_A };
 	memcpy(_reg8, r8, sizeof(r8));
+	uint16_t* r16[] = { &regs.REG_BC, &regs.REG_DE, &regs.REG_HL, &regs.REG_SP };
+	memcpy(_reg16, r16, sizeof(r16));
 }
 
 void z80_instr_decoder::start() {
@@ -59,6 +61,9 @@ void z80_instr_decoder::reset() {
 
 void z80_instr_decoder::exec_main() {
 	switch (_x) {
+	case 0b00:
+		exec_main_q0();
+		break;
 	case 0b01:
 		exec_main_q1();
 		break;
@@ -66,6 +71,7 @@ void z80_instr_decoder::exec_main() {
 		exec_main_q2();
 		break;
 	default:
+		reset();
 		break;
 	}
 }

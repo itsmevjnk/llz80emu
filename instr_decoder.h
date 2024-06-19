@@ -30,10 +30,24 @@ namespace llz80emu {
 
 		/* instruction executor helpers */
 		uint8_t* _reg8[8]; // 8-bit registers (used by main quadrant 1 and 2)
+		uint16_t* _reg16[4]; // 16-bit registers (used by some main quadrant 0 instructions)
 
 		/* instruction executors */
 
 		void exec_main(); // main instruction subset (no prefixes)
+
+		/* main quadrant 0 (xx = 00) */
+		void exec_main_q0();
+		void exec_inc_r8();
+		void exec_dec_r8();
+		void exec_incdec_r16();
+		void exec_ld16_p16(); // also shared with ED quadrant 1
+		void exec_ld8_p16();
+		void exec_ld_i16();
+		void exec_add_hl_r16();
+		void exec_ld_i8();
+		void exec_jr_stub(bool take_branch = true); // JR/DJNZ stub (read displacement byte to Z, then perform relative jump if take_branch is true)
+		void exec_shift_a();
 
 		/* main quadrant 1 (xx = 01) - LD and HALT */
 		void exec_main_q1();

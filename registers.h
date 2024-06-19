@@ -2,6 +2,15 @@
 
 #include "pch.h"
 
+/* macro for getting pointer of low/high byte of a 16-bit register given its pointer */
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define LB_PTR(p)				((uint8_t*)((uintptr_t)(p) + 0))
+#define HB_PTR(p)				((uint8_t*)((uintptr_t)(p) + 1))
+#else
+#define LB_PTR(p)				((uint8_t*)((uintptr_t)(p) + 1))
+#define HB_PTR(p)				((uint8_t*)((uintptr_t)(p) + 0))
+#endif
+
 namespace llz80emu {
 	/* 8-bit register pair */
 #pragma pack(push, 1)

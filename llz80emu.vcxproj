@@ -47,6 +47,7 @@
     <ClCompile Include="cycle.cpp" />
     <ClCompile Include="fetch_cycle.cpp" />
     <ClCompile Include="instr_decoder.cpp" />
+    <ClCompile Include="instr_main_q0.cpp" />
     <ClCompile Include="instr_main_q1.cpp" />
     <ClCompile Include="instr_main_q2.cpp" />
     <ClCompile Include="io_cycle.cpp" />
