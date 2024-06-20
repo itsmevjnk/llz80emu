@@ -38,11 +38,11 @@ namespace llz80emu {
 	#define Z80_PIN_RFSH						29
 	#define Z80_PIN_HALT						30
 	#define Z80_PIN_INT							31
-	#define Z80_PIN_NMI							32
-	#define Z80_PIN_WAIT						33
-	#define Z80_PIN_BUSACK						34
-	#define Z80_PIN_BUSREQ						35
-	#define Z80_PIN_RESET						36
+// #define Z80_PIN_NMI							32 // NMI pin is handled separately
+	#define Z80_PIN_WAIT						32
+	#define Z80_PIN_BUSACK						33
+	#define Z80_PIN_BUSREQ						34
+	#define Z80_PIN_RESET						35
 // #define Z80_PIN_CLK							37 // clock pin is handled separately
 
 	/* Z80 CPU pin bitmask */
@@ -79,7 +79,7 @@ namespace llz80emu {
 	#define Z80_RFSH							(1ULL << Z80_PIN_RFSH)
 	#define Z80_HALT							(1ULL << Z80_PIN_HALT)
 	#define Z80_INT								(1ULL << Z80_PIN_INT)
-	#define Z80_NMI								(1ULL << Z80_PIN_NMI)
+	// #define Z80_NMI								(1ULL << Z80_PIN_NMI)
 	#define Z80_WAIT							(1ULL << Z80_PIN_WAIT)
 	#define Z80_BUSACK							(1ULL << Z80_PIN_BUSACK)
 	#define Z80_BUSREQ							(1ULL << Z80_PIN_BUSREQ)

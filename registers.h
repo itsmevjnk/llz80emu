@@ -99,7 +99,10 @@ namespace llz80emu {
 
 		/* instruction fetch */
 		uint8_t instr; // last instruction byte
-		// TODO: prefixes
+
+		/* maskable interrupt */
+		bool iff1, iff2; // interrupt flip-flops
+		uint8_t int_mode; // interrupt mode (0-2)
 	} z80_registers_t;
 
 	/* flag bits */

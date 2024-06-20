@@ -50,6 +50,8 @@
     <ClCompile Include="instr_main_q0.cpp" />
     <ClCompile Include="instr_main_q1.cpp" />
     <ClCompile Include="instr_main_q2.cpp" />
+    <ClCompile Include="instr_main_q3.cpp" />
+    <ClCompile Include="intack_cycle.cpp" />
     <ClCompile Include="io_cycle.cpp" />
     <ClCompile Include="mem_cycle.cpp" />
     <ClCompile Include="rw_cycle_base.cpp" />

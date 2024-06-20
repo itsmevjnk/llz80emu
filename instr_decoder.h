@@ -31,6 +31,18 @@ namespace llz80emu {
 		/* instruction executor helpers */
 		uint8_t* _reg8[8]; // 8-bit registers (used by main quadrant 1 and 2)
 		uint16_t* _reg16[4]; // 16-bit registers (used by some main quadrant 0 instructions)
+		uint16_t* _reg16_alt[4]; // 16-bit registers (used by PUSH and POP instructions)
+
+		inline uint8_t parity(uint8_t x) {
+			x ^= x >> 4; // 4/4
+			x ^= x >> 2; // 2/2
+			x ^= x >> 1; // 1/1
+			return (~x) & 1;
+		}
+
+		inline void swap(uint16_t& a, uint16_t& b) {
+			uint16_t t = a; a = b; b = t;
+		}
 
 		/* instruction executors */
 
@@ -54,6 +66,19 @@ namespace llz80emu {
 
 		/* main quadrant 2 (xx = 10) - ALU operations */
 		void exec_main_q2();
+		void exec_alu_stub(); // run ALU operations with operand in Z register and operation selector in _y (for sharing with main quadrant 3)
+
+		/* main quadrant 3 (xx = 11) */
+		void exec_main_q3();
+		void exec_cond_ret();
+		void exec_uncond_ret();
+		void exec_jp(bool cond);
+		void exec_call(bool cond);
+		void exec_push();
+		void exec_pop();
+		void exec_io_i8(bool out, uint8_t& reg); // IN r8,(n) / OUT (n),r8
+		void exec_rst();
+		void exec_ex_stack_hl();
 	};
 }
 

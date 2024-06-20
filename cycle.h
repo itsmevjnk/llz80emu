@@ -89,4 +89,16 @@ namespace llz80emu {
 		int _cycles = 0; // number of cycles remaining
 		//z80_bogus_cycle_cb_t* _last_half_cb = nullptr; // callback for the last half of the last cycle (null = no callback)
 	};
+
+	class z80_intack_cycle : public z80_cycle {
+	public:
+		z80_intack_cycle(z80_pins_t& pins, z80_registers_t& regs);
+
+		void reset(uint8_t& val_out);
+		bool clock(bool clk) override;
+	private:
+		z80_registers_t& _regs; // CPU registers
+		uint8_t* _out = nullptr; // register to save data bus output
+		bool _wait = false; // set if there's a WAIT state to be inserted in the next cycle (i.e. long TW2)
+	};
 }

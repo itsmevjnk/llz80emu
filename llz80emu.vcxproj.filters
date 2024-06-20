@@ -67,6 +67,12 @@
     <ClCompile Include="instr_main_q0.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="instr_main_q3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="intack_cycle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

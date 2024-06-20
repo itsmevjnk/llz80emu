@@ -190,13 +190,6 @@ void z80_instr_decoder::exec_jr_stub(bool take_branch) {
 	}
 }
 
-static inline uint8_t parity(uint8_t x) {
-	x ^= x >> 4; // 4/4
-	x ^= x >> 2; // 2/2
-	x ^= x >> 1; // 1/1
-	return x & 1;
-}
-
 void z80_instr_decoder::exec_shift_a() {
 	bool dir = (_y & 0b001), c = !(_y & 0b010); // decode instruction: dir = true for RRCA/RRA (right shift), and c = true if the instruction is RLCA/RRCA
 
@@ -221,9 +214,7 @@ void z80_instr_decoder::exec_main_q0() {
 			reset();
 			break;
 		case 0b001: // EX AF, AF'
-			_regs.REG_WZ = _regs.REG_AF;
-			_regs.REG_AF = _regs.REG_AF_S;
-			_regs.REG_AF_S = _regs.REG_WZ;
+			swap(_regs.REG_AF, _regs.REG_AF_S);
 			reset();
 			break;
 		case 0b010: // DJNZ d

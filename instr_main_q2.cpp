@@ -3,23 +3,7 @@
 
 using namespace llz80emu;
 
-static inline uint8_t parity(uint8_t x) {
-	x ^= x >> 4; // 4/4
-	x ^= x >> 2; // 2/2
-	x ^= x >> 1; // 1/1
-	return x & 1;
-}
-
-void z80_instr_decoder::exec_main_q2() {
-	const uint8_t* src = _reg8[_z]; // decode source register
-	if (!src) {
-		if (!_step) {
-			/* stage memory read from (HL) to one of our temp regs */
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
-			return;
-		}
-	} else _regs.REG_Z = *src;
-
+void z80_instr_decoder::exec_alu_stub() {
 	/* perform ALU op and save to tmp */
 	uint16_t tmp = 0;
 	switch (_y) {
@@ -109,4 +93,17 @@ void z80_instr_decoder::exec_main_q2() {
 	}
 	if (_y != 0b111) _regs.REG_A = tmp & 0xFF; // CP discards the result
 	reset();
+}
+
+void z80_instr_decoder::exec_main_q2() {
+	const uint8_t* src = _reg8[_z]; // decode source register
+	if (!src) {
+		if (!_step) {
+			/* stage memory read from (HL) to one of our temp regs */
+			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			return;
+		}
+	} else _regs.REG_Z = *src;
+
+	exec_alu_stub();
 }
