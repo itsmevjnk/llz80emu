@@ -79,6 +79,9 @@
     <ClCompile Include="instr_ed_q2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="instr_cb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

@@ -96,6 +96,12 @@ namespace llz80emu {
 		void exec_blk_cp(); // CPI/CPD/CPIR/CPDR
 		void exec_blk_in(); // INI/IND/INIR/INDR
 		void exec_blk_out(); // OUTI/OUTD/OTIR/OTDR
+
+		void exec_cb(); // CB prefix subset (all contained in instr_cb.cpp)
+		void exec_shift_rot(); // CB quadrant 0
+		void exec_bit(); // CB quadrant 1
+		void exec_res(); // CB quadrant 2
+		void exec_set(); // CB quadrant 3
 	};
 }
 

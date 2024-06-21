@@ -1,0 +1,164 @@
+#include "pch.h"
+#include "instr_decoder.h"
+
+using namespace llz80emu;
+
+void z80_instr_decoder::exec_cb() {
+	switch (_x) {
+	case 0b00:
+		exec_shift_rot();
+		break;
+	case 0b01:
+		exec_bit();
+		break;
+	case 0b10:
+		exec_res();
+		break;
+	case 0b11:
+		exec_set();
+		break;
+	}
+}
+
+void z80_instr_decoder::exec_shift_rot() {
+	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	int s = _step;
+	if (!_step) {
+		if (!reg) {
+			/* read (HL) into Z */
+			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			return;
+		}
+		else _regs.REG_Z = *reg; // copy register to Z to work on
+	}
+
+	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+
+	if (!s) {
+		uint8_t carry = (_regs.REG_F >> Z80_FLAGBIT_C) & 1; // old carry bit
+		switch (_y) {
+		case 0b000: // RLC
+			_regs.REG_F = (_regs.REG_Z >> 7) << Z80_FLAGBIT_C; // copy bit 7 to C (we don't preserve flag bits)
+			_regs.REG_Z = (_regs.REG_Z << 1) | (_regs.REG_Z >> 7);
+			break;
+		case 0b001: // RRC
+			_regs.REG_F = (_regs.REG_Z & 1) << Z80_FLAGBIT_C; // copy bit 0 to C
+			_regs.REG_Z = (_regs.REG_Z >> 1) | (_regs.REG_Z << 7);
+			break;
+		case 0b010: // RL
+			_regs.REG_F = (_regs.REG_Z >> 7) << Z80_FLAGBIT_C; // copy bit 7 to C
+			_regs.REG_Z = (_regs.REG_Z << 1) | carry;
+			break;
+		case 0b011: // RR
+			_regs.REG_F = (_regs.REG_Z & 1) << Z80_FLAGBIT_C; // copy bit 0 to C
+			_regs.REG_Z = (_regs.REG_Z >> 1) | (carry << 7);
+			break;
+		case 0b100: // SLA
+			_regs.REG_F = (_regs.REG_Z >> 7) << Z80_FLAGBIT_C; // copy bit 7 to C
+			_regs.REG_Z <<= 1;
+			break;
+		case 0b101: // SRA
+			_regs.REG_F = (_regs.REG_Z & 1) << Z80_FLAGBIT_C; // copy bit 0 to C
+			_regs.REG_Z = (_regs.REG_Z & (1 << 7)) | (_regs.REG_Z >> 1); // preserve bit 7
+			break;
+		case 0b110: // SLL
+			_regs.REG_F = (_regs.REG_Z >> 7) << Z80_FLAGBIT_C; // copy bit 7 to C
+			_regs.REG_Z = (_regs.REG_Z << 1) | 1;
+		case 0b111: // SRL
+			_regs.REG_F = (_regs.REG_Z & 1) << Z80_FLAGBIT_C; // copy bit 0 to C
+			_regs.REG_Z >>= 1;
+			break;
+		}
+		_regs.REG_F =
+			(_regs.REG_F & Z80_FLAG_C) // preserve carry flag we just set above
+			| (parity(_regs.REG_Z) << Z80_FLAGBIT_PV)
+			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5 | Z80_FLAG_S))
+			| ((bool)!_regs.REG_Z << Z80_FLAGBIT_Z);
+
+		if (reg) *reg = _regs.REG_Z; // save and return immediately
+		else {
+			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z); // write result back to (HL)
+			return;
+		}
+	}
+	reset();
+}
+
+void z80_instr_decoder::exec_bit() {
+	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	int s = _step;
+	if (!_step) {
+		if (!reg) {
+			/* read (HL) into Z */
+			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			return;
+		}
+		else _regs.REG_Z = *reg; // copy register to Z to work on
+	}
+
+	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+
+	if (!s) {
+		_regs.REG_Z &= (1 << _y);
+		_regs.REG_F =
+			(_regs.REG_F & Z80_FLAG_C) // preserve C only
+			| Z80_FLAG_H
+			| ((!_regs.REG_Z) ? (Z80_FLAG_Z | Z80_FLAG_PV) : 0)
+			| (_regs.REG_Z & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5));
+		if (!reg) {
+			_ctx.start_bogus_cycle(1); // run 1 bogus cycle for (HL)
+			return;
+		}
+	}
+	reset();
+}
+
+void z80_instr_decoder::exec_res() {
+	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	int s = _step;
+	if (!_step) {
+		if (!reg) {
+			/* read (HL) into Z */
+			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			return;
+		}
+		else _regs.REG_Z = *reg; // copy register to Z to work on
+	}
+
+	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+	
+	if (!s) {
+		_regs.REG_Z &= ~(1 << _y);
+		if (reg) *reg = _regs.REG_Z; // save and return immediately
+		else {
+			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z); // write result back to (HL)
+			return;
+		}
+	}
+	reset();
+}
+
+void z80_instr_decoder::exec_set() {
+	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	int s = _step;
+	if (!_step) {
+		if (!reg) {
+			/* read (HL) into Z */
+			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			return;
+		}
+		else _regs.REG_Z = *reg; // copy register to Z to work on
+	}
+
+	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+
+	if (!s) {
+		_regs.REG_Z |= (1 << _y);
+		if (reg) *reg = _regs.REG_Z; // save and return immediately
+		else {
+			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z); // write result back to (HL)
+			return;
+		}
+	}
+	reset();
+}

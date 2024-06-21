@@ -113,6 +113,12 @@ void z80_instr_decoder::next_step() {
 	case Z80_SUBSET_NONE:
 		exec_main();
 		break;
+	case Z80_SUBSET_CB:
+		exec_cb();
+		break;
+	case Z80_SUBSET_ED:
+		exec_ed();
+		break;
 	default:
 		reset();
 		break;

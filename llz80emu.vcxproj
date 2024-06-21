@@ -46,6 +46,7 @@
     <ClCompile Include="bogus_cycle.cpp" />
     <ClCompile Include="cycle.cpp" />
     <ClCompile Include="fetch_cycle.cpp" />
+    <ClCompile Include="instr_cb.cpp" />
     <ClCompile Include="instr_decoder.cpp" />
     <ClCompile Include="instr_ed_q1.cpp" />
     <ClCompile Include="instr_ed_q2.cpp" />
