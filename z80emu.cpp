@@ -39,7 +39,7 @@ z80_pins_t z80emu::clock(z80_pinbits_t state) {
 				if (dynamic_cast<z80_fetch_cycle*>(_cycle)) {
 					/* instruction execution complete */
 
-					if (_nmiff) {
+					if (_nmiff && !_nmi_skip) {
 						/* NMI triggered */
 						_regs.iff2 = _regs.iff1; _regs.iff1 = false; // disable interrupt while keeping former IFF1 state in IFF2
 						_nmiff = false; _nmi_pending = true; // clear NMI flip-flop (so it can be re-activated at some other point), then stage NMI servicing
@@ -59,7 +59,7 @@ z80_pins_t z80emu::clock(z80_pinbits_t state) {
 						return _pins;
 					}
 
-					_int_skip = false;
+					_nmi_skip = _int_skip = false;
 				}
 			}
 		}
@@ -126,6 +126,10 @@ bool z80emu::is_nmi_pending() const {
 
 void z80emu::skip_int_handling() {
 	_int_skip = true;
+}
+
+void z80emu::skip_nmi_handling() {
+	_nmi_skip = true;
 }
 
 bool z80emu::is_int_pending() const {

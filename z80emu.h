@@ -39,6 +39,7 @@ namespace llz80emu {
 		void start_intack_cycle(uint8_t& val_out);
 		// z80_cycle* const& cycle = _cycle;
 
+		void skip_nmi_handling();
 		bool is_nmi_pending() const;
 
 		void skip_int_handling();
@@ -68,6 +69,7 @@ namespace llz80emu {
 		bool _int_pending = false; // set when handling INT (cleared once we're out of the interrupt acknowledgment process)
 
 		bool _nmiff = false; // state of the NMI flip-flop (true = active)
+		bool _nmi_skip = false; // set to skip NMI handling (for emulating NONI)
 		bool _nmi_pending = false; // set when NMI flip-flop activity has been acknowledged, but the interrupt is not serviced yet (ie. doing bogus fetch + PC stack pushes)
 	};
 }

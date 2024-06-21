@@ -20,19 +20,23 @@ void z80_instr_decoder::start() {
 			case 0xDD:
 				_mod = Z80_MOD_DD;
 				_ctx.start_fetch_cycle();
+				_ctx.skip_int_handling(); _ctx.skip_nmi_handling(); // skip all interrupts
 				return;
 			case 0xFD:
 				_mod = Z80_MOD_FD;
 				_ctx.start_fetch_cycle();
+				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
 				return;
 			case 0xCB:
 				_subset = Z80_SUBSET_CB;
 				_ctx.start_fetch_cycle();
+				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
 				return;
 			case 0xED:
 				_subset = Z80_SUBSET_ED;
 				_mod = Z80_MOD_NONE; // 0xED prefix disregards 0xDD/FD prefixes
 				_ctx.start_fetch_cycle();
+				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
 				return;
 			}
 		}
