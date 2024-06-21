@@ -73,6 +73,9 @@
     <ClCompile Include="intack_cycle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="instr_ed_q1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

@@ -56,10 +56,10 @@ void z80_instr_decoder::next_step() {
 			_ctx.start_bogus_cycle(1);
 			break;
 		case 1: // push current PC into stack
-			_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCH);
+			_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCH);
 			break;
 		case 2:
-			_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCL);
+			_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCL);
 			break;
 		default: // restart at 0x66
 			_regs.REG_PC = 0x0066;
@@ -77,10 +77,10 @@ void z80_instr_decoder::next_step() {
 			_ctx.start_bogus_cycle(1); // one extra cycle
 			break;
 		case 1: // push current PC into stack
-			_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCH);
+			_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCH);
 			break;
 		case 2:
-			_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCL);
+			_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCL);
 			break;
 		case 3:
 			if (_regs.int_mode == 1) {
@@ -136,6 +136,17 @@ void z80_instr_decoder::exec_main() {
 		break;
 	case 0b11:
 		exec_main_q3();
+		break;
+	default:
+		reset();
+		break;
+	}
+}
+
+void z80_instr_decoder::exec_ed() {
+	switch (_x) {
+	case 0b01:
+		exec_ed_q1();
 		break;
 	default:
 		reset();

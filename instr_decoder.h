@@ -79,6 +79,16 @@ namespace llz80emu {
 		void exec_io_i8(bool out, uint8_t& reg); // IN r8,(n) / OUT (n),r8
 		void exec_rst();
 		void exec_ex_stack_hl();
+
+		void exec_ed(); // ED prefix subset
+
+		/* ED quadrant 1 (xx = 01) */
+		void exec_ed_q1();
+		void exec_io_r8(bool out);
+		void exec_adc_sbc_hl_r16();
+		void exec_ld_r16_p16();
+		void exec_ld_ir(); // LD I,A / LD R,A / LD A,I / LD A,R
+		void exec_bcd_rotate(); // RRD / RLD
 	};
 }
 

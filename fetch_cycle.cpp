@@ -38,8 +38,8 @@ bool z80_fetch_cycle::clock(bool clk) {
 			if (!_halt) _regs.instr = (uint8_t)((_pins.state & Z80_D_ALL) >> Z80_PIN_D_BASE); // sample Dx pins and store them in the instruction register (only if we're not halting)
 			else _regs.instr = 0x76; // continue halting
 			_pins.state =
-				(_pins.state | (Z80_MREQ | Z80_RD | Z80_M1)) // set MREQ, RD, M1
-				& ~(Z80_RFSH | Z80_A_ALL) // clear RFSH and address lines
+				((_pins.state | (Z80_MREQ | Z80_RD | Z80_M1)) // set MREQ, RD, M1
+				& ~(Z80_RFSH | Z80_A_ALL)) // clear RFSH and address lines
 				| ((z80_pinbits_t)_regs.REG_IR << Z80_PIN_A_BASE); // and set address bus to I + R (refresh reg)
 		}
 		break;

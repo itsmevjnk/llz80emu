@@ -24,10 +24,10 @@ void z80_instr_decoder::exec_cond_ret() {
 		break;
 	case 1:
 		if (!check_branch_condition(_regs.REG_F, _y)) reset(); // not taking branch
-		else _ctx.start_io_read_cycle(_regs.REG_SP++, _regs.REG_PCL);
+		else _ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_PCL);
 		break;
 	case 2:
-		_ctx.start_io_read_cycle(_regs.REG_SP++, _regs.REG_PCH);
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_PCH);
 		break;
 	default:
 		reset(); // done
@@ -38,10 +38,10 @@ void z80_instr_decoder::exec_cond_ret() {
 void z80_instr_decoder::exec_uncond_ret() {
 	switch (_step) {
 	case 0:
-		_ctx.start_io_read_cycle(_regs.REG_SP++, _regs.REG_PCL);
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_PCL);
 		break;
 	case 1:
-		_ctx.start_io_read_cycle(_regs.REG_SP++, _regs.REG_PCH);
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_PCH);
 		break;
 	default:
 		reset();
@@ -77,10 +77,10 @@ void z80_instr_decoder::exec_call(bool cond) {
 		else reset();
 		break;
 	case 3:
-		_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCH); // push high byte of PC
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCH); // push high byte of PC
 		break;
 	case 4:
-		_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCL); // push low byte of PC
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCL); // push low byte of PC
 		break;
 	default:
 		_regs.PC = _regs.WZ; // finally branch
@@ -95,10 +95,10 @@ void z80_instr_decoder::exec_push() {
 		_ctx.start_bogus_cycle(1); // insert 1 extra clock cycle before doing our thing
 		break;
 	case 1:
-		_ctx.start_io_write_cycle(--_regs.REG_SP, *HB_PTR(_reg16_alt[_y >> 1])); // push high byte first
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, *HB_PTR(_reg16_alt[_y >> 1])); // push high byte first
 		break;
 	case 2:
-		_ctx.start_io_write_cycle(--_regs.REG_SP, *LB_PTR(_reg16_alt[_y >> 1])); // then the low byte
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, *LB_PTR(_reg16_alt[_y >> 1])); // then the low byte
 		break;
 	default:
 		reset();
@@ -109,10 +109,10 @@ void z80_instr_decoder::exec_push() {
 void z80_instr_decoder::exec_pop() {
 	switch (_step) {
 	case 0:
-		_ctx.start_io_read_cycle(_regs.REG_SP++, *LB_PTR(_reg16_alt[_y >> 1]));
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, *LB_PTR(_reg16_alt[_y >> 1]));
 		break;
 	case 1:
-		_ctx.start_io_read_cycle(_regs.REG_SP++, *HB_PTR(_reg16_alt[_y >> 1]));
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, *HB_PTR(_reg16_alt[_y >> 1]));
 		break;
 	default:
 		reset();
@@ -141,10 +141,10 @@ void z80_instr_decoder::exec_rst() {
 		_ctx.start_bogus_cycle(1);
 		break;
 	case 1:
-		_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCH); // push high byte of PC
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCH); // push high byte of PC
 		break;
 	case 2:
-		_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_PCL); // push low byte of PC
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCL); // push low byte of PC
 		break;
 	case 3:
 		_regs.REG_PC = _y << 3; // set PC to the selected vector
@@ -156,16 +156,16 @@ void z80_instr_decoder::exec_rst() {
 void z80_instr_decoder::exec_ex_stack_hl() {
 	switch (_step) {
 	case 0: // first pop to WZ
-		_ctx.start_io_read_cycle(_regs.REG_SP++, _regs.REG_Z);
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_Z);
 		break;
 	case 1:
-		_ctx.start_io_read_cycle(_regs.REG_SP++, _regs.REG_W);
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_W);
 		break;
 	case 2: // then push HL to stack
-		_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_H);
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_H);
 		break;
 	case 3:
-		_ctx.start_io_write_cycle(--_regs.REG_SP, _regs.REG_L);
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_L);
 		break;
 	default:
 		_regs.REG_HL = _regs.REG_WZ; // do the exchange
