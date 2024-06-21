@@ -89,6 +89,13 @@ namespace llz80emu {
 		void exec_ld_r16_p16();
 		void exec_ld_ir(); // LD I,A / LD R,A / LD A,I / LD A,R
 		void exec_bcd_rotate(); // RRD / RLD
+
+		/* ED quadrant 2 (xx = 10) - block transfer operations */
+		void exec_ed_q2();
+		void exec_blk_ld(); // LDI/LDD/LDIR/LDDR 
+		void exec_blk_cp(); // CPI/CPD/CPIR/CPDR
+		void exec_blk_in(); // INI/IND/INIR/INDR
+		void exec_blk_out(); // OUTI/OUTD/OTIR/OTDR
 	};
 }
 

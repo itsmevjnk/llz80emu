@@ -148,6 +148,9 @@ void z80_instr_decoder::exec_ed() {
 	case 0b01:
 		exec_ed_q1();
 		break;
+	case 0b10:
+		exec_ed_q2();
+		break;
 	default:
 		reset();
 		break;
