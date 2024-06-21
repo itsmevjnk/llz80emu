@@ -82,7 +82,7 @@ void z80_instr_decoder::exec_blk_in() {
 		_ctx.start_bogus_cycle(1);
 		break;
 	case 1:
-		_ctx.start_io_read_cycle(_regs.REG_C, _regs.REG_Z);
+		_ctx.start_io_read_cycle(_regs.REG_BC, _regs.REG_Z);
 		break;
 	case 2:
 		_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z);
@@ -115,7 +115,7 @@ void z80_instr_decoder::exec_blk_out() {
 		_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
 		break;
 	case 2:
-		_ctx.start_io_write_cycle(_regs.REG_C, _regs.REG_Z);
+		_ctx.start_io_write_cycle(_regs.REG_BC, _regs.REG_Z);
 		break;
 	case 3:
 		if (_y & 1) _regs.REG_HL--; else _regs.REG_HL++;

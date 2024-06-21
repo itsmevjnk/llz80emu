@@ -126,8 +126,8 @@ void z80_instr_decoder::exec_io_i8(bool out, uint8_t& reg) {
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_Z); // read address to Z
 		break;
 	case 1:
-		if (out) _ctx.start_io_write_cycle(_regs.REG_Z, reg);
-		else _ctx.start_io_read_cycle(_regs.REG_Z, reg);
+		if (out) _ctx.start_io_write_cycle((reg << 8) | _regs.REG_Z, reg);
+		else _ctx.start_io_read_cycle((reg << 8) | _regs.REG_Z, reg);
 		break;
 	default:
 		reset();

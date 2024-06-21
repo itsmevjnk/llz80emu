@@ -6,8 +6,8 @@ using namespace llz80emu;
 void z80_instr_decoder::exec_io_r8(bool out) {
 	switch (_step) {
 	case 0:
-		if (out) _ctx.start_io_write_cycle(_regs.REG_C, (_y == 0b110) ? 0 : *_reg8[_y]);
-		else _ctx.start_io_read_cycle(_regs.REG_C, _regs.REG_Z); // we'll copy the result to the destination register later
+		if (out) _ctx.start_io_write_cycle(_regs.REG_BC, (_y == 0b110) ? 0 : *_reg8[_y]);
+		else _ctx.start_io_read_cycle(_regs.REG_BC, _regs.REG_Z); // we'll copy the result to the destination register later
 		break;
 	default:
 		if (!out) {
