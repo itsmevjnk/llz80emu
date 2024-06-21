@@ -128,6 +128,11 @@ void z80_instr_decoder::exec_bcd_rotate() {
 		_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z);
 		break;
 	default:
+		_regs.REG_F =
+			(_regs.REG_F & Z80_FLAG_C)
+			| (parity(_regs.REG_A) << Z80_FLAGBIT_PV)
+			| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5))
+			| ((bool)!_regs.REG_A << Z80_FLAGBIT_Z);
 		reset();
 		break;
 	}
