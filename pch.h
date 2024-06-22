@@ -6,6 +6,7 @@
 
 #include <stdexcept>
 #include <assert.h>
+#include <string.h>
 
 /* our classes and stuff */
 #include "pins.h"
