@@ -4,12 +4,12 @@
 using namespace llz80emu;
 
 z80_instr_decoder::z80_instr_decoder(z80emu& ctx, z80_registers_t& regs) : _ctx(ctx), _regs(regs) {
-	uint8_t* r8[] = { &regs.REG_B, &regs.REG_C, &regs.REG_D, &regs.REG_E, &regs.REG_H, &regs.REG_L, nullptr /* (HL) */, &regs.REG_A };
-	memcpy(_reg8, r8, sizeof(r8));
-	uint16_t* r16[] = { &regs.REG_BC, &regs.REG_DE, &regs.REG_HL, &regs.REG_SP };
-	memcpy(_reg16, r16, sizeof(r16));
-	r16[3] = &regs.REG_AF; // difference between _reg16 and _reg16_alt
-	memcpy(_reg16_alt, r16, sizeof(r16));
+	//uint8_t* r8[] = { &regs.REG_B, &regs.REG_C, &regs.REG_D, &regs.REG_E, &regs.REG_H, &regs.REG_L, nullptr /* (HL) */, &regs.REG_A };
+	//memcpy(_reg8, r8, sizeof(r8));
+	//uint16_t* r16[] = { &regs.REG_BC, &regs.REG_DE, &regs.REG_HL, &regs.REG_SP };
+	//memcpy(_reg16, r16, sizeof(r16));
+	//r16[3] = &regs.REG_AF; // difference between _reg16 and _reg16_alt
+	//memcpy(_reg16_alt, r16, sizeof(r16));
 }
 
 void z80_instr_decoder::start() {
@@ -29,7 +29,22 @@ void z80_instr_decoder::start() {
 				return;
 			case 0xCB:
 				_subset = Z80_SUBSET_CB;
-				_ctx.start_fetch_cycle();
+				if (_mod == Z80_MOD_NONE) {
+					/* no mod prefixes - continue on as usual */
+					_ctx.start_fetch_cycle();
+				}
+				else {
+					/* DD/FD prefix - read d offset, then perform pseudo opcode fetch */
+					if (!_mod_d_ready) process_hlptr(0, false); // read displacement byte - we'll defer the HL pointer calculation after the pseudo opcode fetch
+					else if (!_mod_cb_fetched) {
+						_ctx.start_mem_read_cycle(_regs.REG_PC++, _mod_cb_instr); // pseudo opcode fetch
+						_mod_cb_fetched = true;
+					}
+					else if (process_hlptr(2)) { // 2 extra clock cycles following pseudo opcode fetch
+						_regs.instr = _mod_cb_instr;
+						break;
+					}
+				}
 				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
 				return;
 			case 0xED:
@@ -48,6 +63,7 @@ void z80_instr_decoder::start() {
 	}
 
 	_step = 0; // reset step counter
+	_started = true;
 	next_step(); // start execution
 }
 
@@ -128,9 +144,11 @@ end:
 	_step++;
 }
 
-void z80_instr_decoder::reset() {
+void z80_instr_decoder::reset(bool halt) {
 	_subset = Z80_SUBSET_NONE; _mod = Z80_MOD_NONE;
-	_ctx.start_fetch_cycle();
+	_mod_d_ready = _hlptr_ready = _mod_cb_fetched = false;
+	_started = false;
+	_ctx.start_fetch_cycle(halt);
 }
 
 void z80_instr_decoder::exec_main() {
@@ -165,4 +183,36 @@ void z80_instr_decoder::exec_ed() {
 		reset();
 		break;
 	}
+}
+
+bool z80_instr_decoder::process_hlptr(int extra_cycles, bool set_hlptr_ready) {
+	if (_mod == Z80_MOD_NONE) {
+		/* no modifiers - HL is HL */
+		_hl_ptr = _regs.REG_HL;
+		return true;
+	}
+
+	if (!_mod_d_ready) {
+		/* displacement byte hasn't been read */
+		_ctx.start_mem_read_cycle(_regs.REG_PC++, *((uint8_t*)&_mod_d)); // cast _mod_d from int8_t to uint8_t
+		_step--; // go back by 1 step so the next next_step() call will be landed back to where we are
+		_mod_d_ready = true; // it'll be ready
+		return false;
+	}
+
+	if (!_hlptr_ready) {
+		/* displacement byte has just been read */
+		_hl_ptr = ((_mod == Z80_MOD_DD) ? _regs.REG_IX : _regs.REG_IY) + _mod_d; // calculate IX+d / IY+d
+		if (set_hlptr_ready) _hlptr_ready = true;
+		if (!extra_cycles) return true; // no extra cycles required
+		_ctx.start_bogus_cycle(extra_cycles); // extra cycles for calculating address
+		_step--;
+		return false;
+	}
+	
+	return true;
+}
+
+bool z80_instr_decoder::started() const {
+	return _started;
 }

@@ -33,34 +33,35 @@ z80_pins_t z80emu::clock(z80_pinbits_t state) {
 		/* operate cycle */
 		if (_cycle->clock(_clkpin)) {
 			/* cycle has finished */
-			if (dynamic_cast<z80_fetch_cycle*>(_cycle) || dynamic_cast<z80_intack_cycle*>(_cycle)) _instr.start(); // exiting fetch/interrupt acknowledgment cycle - start decoding and executing new instruction
-			else {
-				_instr.next_step(); // run next step of instruction execution
-				if (dynamic_cast<z80_fetch_cycle*>(_cycle)) {
-					/* instruction execution complete */
+			if (!_instr.started()) _instr.start(); // exiting fetch/interrupt acknowledgment cycle - start decoding and executing new instruction
+			else _instr.next_step(); // run next step of instruction execution
 
-					if (_nmiff && !_nmi_skip) {
-						/* NMI triggered */
-						_regs.iff2 = _regs.iff1; _regs.iff1 = false; // disable interrupt while keeping former IFF1 state in IFF2
-						_nmiff = false; _nmi_pending = true; // clear NMI flip-flop (so it can be re-activated at some other point), then stage NMI servicing
-						return _pins; // after this, a fetch cycle will be issued as normal, but it won't be followed by a normal instruction decode/execution
-					}
+			if (!_instr.started()) {
+				/* instruction execution complete */
 
-					if (_intpin && _regs.iff1 && !_int_skip) {
-						/* INT triggered and can be accepted */
-						_regs.iff1 = false; // disable interrupt
-						if (!_regs.int_mode) start_intack_cycle(_regs.instr); // mode 0: read to instruction ptr (this will be handled as normal)
-						else { // mode 1/2
-							start_intack_cycle(_regs.REG_Z); // read to Z (mode 1 can ignore, mode 2 can use this to calculate vector)
-							_int_pending = true; // mark as handling INT so instr_decoder can work on the rest
-							// mode 1: extra clock cycle + push PC + jump to 0x0038
-							// mode 2: extra clock cycle + push PC + read new PC from vector
-						}
-						return _pins;
-					}
-
-					_nmi_skip = _int_skip = false;
+				if (_nmiff && !_nmi_skip) {
+					/* NMI triggered */
+					_regs.iff2 = _regs.iff1; _regs.iff1 = false; // disable interrupt while keeping former IFF1 state in IFF2
+					_nmiff = false; _nmi_pending = true; // clear NMI flip-flop (so it can be re-activated at some other point), then stage NMI servicing
+					if (!(_pins.state & Z80_HALT)) _regs.REG_PC++; // if we're halting and an interrupt occurred, we'll need to bring ourselves out of the HALT instruction
+					return _pins; // after this, a fetch cycle will be issued as normal, but it won't be followed by a normal instruction decode/execution
 				}
+
+				if (_intpin && _regs.iff1 && !_int_skip) {
+					/* INT triggered and can be accepted */
+					_regs.iff1 = false; // disable interrupt
+					if (!_regs.int_mode) start_intack_cycle(_regs.instr); // mode 0: read to instruction ptr (this will be handled as normal)
+					else { // mode 1/2
+						start_intack_cycle(_regs.REG_Z); // read to Z (mode 1 can ignore, mode 2 can use this to calculate vector)
+						_int_pending = true; // mark as handling INT so instr_decoder can work on the rest
+						if (!(_pins.state & Z80_HALT)) _regs.REG_PC++; // if we're halting and an interrupt occurred, we'll need to bring ourselves out of the HALT instruction
+						// mode 1: extra clock cycle + push PC + jump to 0x0038
+						// mode 2: extra clock cycle + push PC + read new PC from vector
+					}
+					return _pins;
+				}
+
+				_nmi_skip = _int_skip = false;
 			}
 		}
 	}

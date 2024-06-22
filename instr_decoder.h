@@ -8,9 +8,13 @@ namespace llz80emu {
 		z80_instr_decoder(z80emu& ctx, z80_registers_t& regs);
 
 		void start(); // start decoding and executing the instruction stored in _regs
-		void reset(); // stop instruction execution and start fetch cycle
+		void reset(bool halt = false); // stop instruction execution and start fetch cycle
 		void next_step(); // transition to next step or end execution and go back to fetching
+
+		bool started() const; // return whether instruction execution has started (as opposed to still awaiting prefix and stuff)
 	private:
+		bool _started = false;
+
 		z80emu& _ctx; // context (for state transitions)
 		z80_registers_t& _regs; // CPU registers
 
@@ -26,12 +30,115 @@ namespace llz80emu {
 			Z80_MOD_FD, // FD prefix (IY)
 		} _mod = Z80_MOD_NONE; // modifier prefix
 
+		/* DD/FD prefix displacement byte */
+		int8_t _mod_d = 0;
+		uint16_t _hl_ptr = 0; // HL/IX+d/IY+d, depending on modifier prefix (initialised by process_hlptr())
+		bool _mod_d_ready = false; // set when the displacement byte has been read
+		bool _hlptr_ready = false; // set when _hl_ptr is ready
+		uint8_t _mod_cb_instr = 0; // instruction byte following DDCB/FDCB+d
+		bool _mod_cb_fetched = false; // set when the pseudo opcode fetch following DDCB/FDCB+d has been staged
+		bool process_hlptr(int extra_cycles = 5, bool set_hlptr_ready = true); // return false if the current exec step is to be stopped immediately after this (i.e. to read displacement byte); otherwise, _hl_ptr will contain the pointer for use in (HL)
+
 		uint8_t _x = 0xFF, _y = 0xFF, _z = 0xFF; // broken down parts of the opcode (xx yyy zzz)
 
 		/* instruction executor helpers */
-		uint8_t* _reg8[8]; // 8-bit registers (used by main quadrant 1 and 2)
-		uint16_t* _reg16[4]; // 16-bit registers (used by some main quadrant 0 instructions)
-		uint16_t* _reg16_alt[4]; // 16-bit registers (used by PUSH and POP instructions)
+		//uint8_t* _reg8[8]; // 8-bit registers (used by main quadrant 1 and 2)
+		//uint16_t* _reg16[4]; // 16-bit registers (used by some main quadrant 0 instructions)
+		//uint16_t* _reg16_alt[4]; // 16-bit registers (used by PUSH and POP instructions)
+
+		inline uint8_t* reg8_nomod(uint8_t idx) {
+			switch (idx) {
+			case 0: return &_regs.REG_B;
+			case 1: return &_regs.REG_C;
+			case 2: return &_regs.REG_D;
+			case 3: return &_regs.REG_E;
+			case 4: return &_regs.REG_H;
+			case 5: return &_regs.REG_L;
+			case 7: return &_regs.REG_A;
+			default: return nullptr;
+			}
+		}
+
+		inline uint8_t* reg8(uint8_t idx) {
+			switch (idx) {
+			case 0: return &_regs.REG_B;
+			case 1: return &_regs.REG_C;
+			case 2: return &_regs.REG_D;
+			case 3: return &_regs.REG_E;
+			case 7: return &_regs.REG_A;
+			case 4:
+				switch (_mod) {
+				case Z80_MOD_NONE: return &_regs.REG_H;
+				case Z80_MOD_DD: return &_regs.REG_IXH;
+				case Z80_MOD_FD: return &_regs.REG_IYH;
+				default: return nullptr;
+				}
+				break;
+			case 5:
+				switch (_mod) {
+				case Z80_MOD_NONE: return &_regs.REG_L;
+				case Z80_MOD_DD: return &_regs.REG_IXL;
+				case Z80_MOD_FD: return &_regs.REG_IYL;
+				default: return nullptr;
+				}
+				break;
+			default: return nullptr;
+			}
+		}
+
+		inline uint16_t* reg16_nomod(uint8_t idx) {
+			switch (idx) {
+			case 0: return &_regs.REG_BC;
+			case 1: return &_regs.REG_DE;
+			case 2: return &_regs.REG_HL;
+			case 3: return &_regs.REG_SP;
+			default: return nullptr;
+			}
+		}
+
+		inline uint16_t* reg16(uint8_t idx) {
+			switch (idx) {
+			case 0: return &_regs.REG_BC;
+			case 1: return &_regs.REG_DE;
+			case 2:
+				switch (_mod) {
+				case Z80_MOD_NONE: return &_regs.REG_HL;
+				case Z80_MOD_DD: return &_regs.REG_IX;
+				case Z80_MOD_FD: return &_regs.REG_IY;
+				default: return nullptr;
+				}
+				break;
+			case 3: return &_regs.REG_SP;
+			default: return nullptr;
+			}
+		}
+
+		inline uint16_t* reg16_alt_nomod(uint8_t idx) {
+			switch (idx) {
+			case 0: return &_regs.REG_BC;
+			case 1: return &_regs.REG_DE;
+			case 2: return &_regs.REG_HL;
+			case 3: return &_regs.REG_AF;
+			default: return nullptr;
+			}
+		}
+
+		inline uint16_t* reg16_alt(uint8_t idx) {
+			switch (idx) {
+			case 0: return &_regs.REG_BC;
+			case 1: return &_regs.REG_DE;
+			case 2:
+				switch (_mod) {
+				case Z80_MOD_NONE: return &_regs.REG_HL;
+				case Z80_MOD_DD: return &_regs.REG_IX;
+				case Z80_MOD_FD: return &_regs.REG_IY;
+				default: return nullptr;
+				}
+				break;
+			case 3: return &_regs.REG_AF;
+			default: return nullptr;
+			}
+		}
 
 		inline uint8_t parity(uint8_t x) {
 			x ^= x >> 4; // 4/4

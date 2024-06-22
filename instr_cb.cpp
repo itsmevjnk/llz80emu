@@ -21,12 +21,12 @@ void z80_instr_decoder::exec_cb() {
 }
 
 void z80_instr_decoder::exec_shift_rot() {
-	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	uint8_t* reg = reg8(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
-		if (!reg) {
-			/* read (HL) into Z */
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+		if (!reg || _mod != Z80_MOD_NONE) {
+			/* read (HL) into Z - we'll also do that regardless of register for DD/FD prefixes */
+			_ctx.start_mem_read_cycle((_mod == Z80_MOD_NONE) ? _regs.REG_HL : _hl_ptr, _regs.REG_Z);
 			return;
 		}
 		else _regs.REG_Z = *reg; // copy register to Z to work on
@@ -75,22 +75,28 @@ void z80_instr_decoder::exec_shift_rot() {
 			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5 | Z80_FLAG_S))
 			| ((bool)!_regs.REG_Z << Z80_FLAGBIT_Z);
 
-		if (reg) *reg = _regs.REG_Z; // save and return immediately
-		else {
-			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z); // write result back to (HL)
+		if (reg) *reg = _regs.REG_Z; // save to destination register
+		if (!reg || _mod != Z80_MOD_NONE) {
+			/* insert 1 bogus cycle if our instruction involves (HL/IX+d/IY+d) */
+			_ctx.start_bogus_cycle(1);
 			return;
 		}
+	}
+	else if (s == 1 && (!reg || _mod != Z80_MOD_NONE)) {
+		/* write back to (HL/IX+d/IY+d) */
+		_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
+		return;
 	}
 	reset();
 }
 
 void z80_instr_decoder::exec_bit() {
-	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	uint8_t* reg = reg8(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
-		if (!reg) {
+		if (!reg || _mod != Z80_MOD_NONE) {
 			/* read (HL) into Z */
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			_ctx.start_mem_read_cycle((_mod == Z80_MOD_NONE) ? _regs.REG_HL : _hl_ptr, _regs.REG_Z);
 			return;
 		}
 		else _regs.REG_Z = *reg; // copy register to Z to work on
@@ -105,7 +111,7 @@ void z80_instr_decoder::exec_bit() {
 			| Z80_FLAG_H
 			| ((!_regs.REG_Z) ? (Z80_FLAG_Z | Z80_FLAG_PV) : 0)
 			| (_regs.REG_Z & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5));
-		if (!reg) {
+		if (!reg || _mod != Z80_MOD_NONE) {
 			_ctx.start_bogus_cycle(1); // run 1 bogus cycle for (HL)
 			return;
 		}
@@ -114,12 +120,12 @@ void z80_instr_decoder::exec_bit() {
 }
 
 void z80_instr_decoder::exec_res() {
-	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	uint8_t* reg = reg8(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
-		if (!reg) {
+		if (!reg || _mod != Z80_MOD_NONE) {
 			/* read (HL) into Z */
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			_ctx.start_mem_read_cycle((_mod == Z80_MOD_NONE) ? _regs.REG_HL : _hl_ptr, _regs.REG_Z);
 			return;
 		}
 		else _regs.REG_Z = *reg; // copy register to Z to work on
@@ -129,22 +135,28 @@ void z80_instr_decoder::exec_res() {
 	
 	if (!s) {
 		_regs.REG_Z &= ~(1 << _y);
-		if (reg) *reg = _regs.REG_Z; // save and return immediately
-		else {
-			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z); // write result back to (HL)
+		if (reg) *reg = _regs.REG_Z; // save to destination register
+		if (!reg || _mod != Z80_MOD_NONE) {
+			/* insert 1 bogus cycle if our instruction involves (HL/IX+d/IY+d) */
+			_ctx.start_bogus_cycle(1);
 			return;
 		}
+	}
+	else if (s == 1 && (!reg || _mod != Z80_MOD_NONE)) {
+		/* write back to (HL/IX+d/IY+d) */
+		_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
+		return;
 	}
 	reset();
 }
 
 void z80_instr_decoder::exec_set() {
-	uint8_t* reg = _reg8[_z]; // NULL for (HL)
+	uint8_t* reg = reg8(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
-		if (!reg) {
+		if (!reg || _mod != Z80_MOD_NONE) {
 			/* read (HL) into Z */
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			_ctx.start_mem_read_cycle((_mod == Z80_MOD_NONE) ? _regs.REG_HL : _hl_ptr, _regs.REG_Z);
 			return;
 		}
 		else _regs.REG_Z = *reg; // copy register to Z to work on
@@ -154,11 +166,17 @@ void z80_instr_decoder::exec_set() {
 
 	if (!s) {
 		_regs.REG_Z |= (1 << _y);
-		if (reg) *reg = _regs.REG_Z; // save and return immediately
-		else {
-			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z); // write result back to (HL)
+		if (reg) *reg = _regs.REG_Z; // save to destination register
+		if (!reg || _mod != Z80_MOD_NONE) {
+			/* insert 1 bogus cycle if our instruction involves (HL/IX+d/IY+d) */
+			_ctx.start_bogus_cycle(1);
 			return;
 		}
+	}
+	else if (s == 1 && (!reg || _mod != Z80_MOD_NONE)) {
+		/* write back to (HL/IX+d/IY+d) */
+		_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
+		return;
 	}
 	reset();
 }

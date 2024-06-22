@@ -95,10 +95,10 @@ void z80_instr_decoder::exec_push() {
 		_ctx.start_bogus_cycle(1); // insert 1 extra clock cycle before doing our thing
 		break;
 	case 1:
-		_ctx.start_mem_write_cycle(--_regs.REG_SP, *HB_PTR(_reg16_alt[_y >> 1])); // push high byte first
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, *HB_PTR(reg16_alt(_y >> 1))); // push high byte first
 		break;
 	case 2:
-		_ctx.start_mem_write_cycle(--_regs.REG_SP, *LB_PTR(_reg16_alt[_y >> 1])); // then the low byte
+		_ctx.start_mem_write_cycle(--_regs.REG_SP, *LB_PTR(reg16_alt(_y >> 1))); // then the low byte
 		break;
 	default:
 		reset();
@@ -109,10 +109,10 @@ void z80_instr_decoder::exec_push() {
 void z80_instr_decoder::exec_pop() {
 	switch (_step) {
 	case 0:
-		_ctx.start_mem_read_cycle(_regs.REG_SP++, *LB_PTR(_reg16_alt[_y >> 1]));
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, *LB_PTR(reg16_alt(_y >> 1)));
 		break;
 	case 1:
-		_ctx.start_mem_read_cycle(_regs.REG_SP++, *HB_PTR(_reg16_alt[_y >> 1]));
+		_ctx.start_mem_read_cycle(_regs.REG_SP++, *HB_PTR(reg16_alt(_y >> 1)));
 		break;
 	default:
 		reset();

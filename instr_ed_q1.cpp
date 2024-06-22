@@ -6,7 +6,7 @@ using namespace llz80emu;
 void z80_instr_decoder::exec_io_r8(bool out) {
 	switch (_step) {
 	case 0:
-		if (out) _ctx.start_io_write_cycle(_regs.REG_BC, (_y == 0b110) ? 0 : *_reg8[_y]);
+		if (out) _ctx.start_io_write_cycle(_regs.REG_BC, (_y == 0b110) ? 0 : *reg8(_y));
 		else _ctx.start_io_read_cycle(_regs.REG_BC, _regs.REG_Z); // we'll copy the result to the destination register later
 		break;
 	default:
@@ -17,7 +17,7 @@ void z80_instr_decoder::exec_io_r8(bool out) {
 				| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5 | Z80_FLAG_S))
 				| ((bool)!_regs.REG_Z << Z80_FLAGBIT_Z)
 				| (parity(_regs.REG_Z) << Z80_FLAGBIT_PV);
-			if (_y != 0b110) *_reg8[_y] = _regs.REG_Z; // copy result
+			if (_y != 0b110) *reg8(_y) = _regs.REG_Z; // copy result
 		}
 		reset();
 		break;
@@ -27,7 +27,7 @@ void z80_instr_decoder::exec_io_r8(bool out) {
 void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 	if (!_step) {
 		uint32_t tmp = 0;
-		uint16_t addend = *_reg16[_y >> 1];
+		uint16_t addend = *reg16(_y >> 1);
 		if (_y & 1) {
 			/* ADC */
 			_regs.REG_F &= ~Z80_FLAG_PV; // clear overflow flag first
@@ -67,7 +67,7 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 }
 
 void z80_instr_decoder::exec_ld_r16_p16() {
-	uint16_t* reg = _reg16[_y >> 1];
+	uint16_t* reg = reg16(_y >> 1);
 	switch (_step) {
 	case 0:
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_Z);

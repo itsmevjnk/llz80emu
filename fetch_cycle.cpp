@@ -54,7 +54,7 @@ bool z80_fetch_cycle::clock(bool clk) {
 		_pins.state =
 			(_pins.state | Z80_MREQ) //  set MREQ (ending refresh)
 			& ~(0xFF << Z80_PIN_A_BASE); // clear low address lines (seems to be unexplained)
-		if (!_halt) _regs.REG_PC++; // increment PC (only if we're not halting!)
+		_regs.REG_PC++;
 		// address line and RFSH must be reset by the next cycle
 		if (!_bus_release) return true;
 		break;

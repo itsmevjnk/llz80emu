@@ -4,19 +4,20 @@
 using namespace llz80emu;
 
 void z80_instr_decoder::exec_inc_r8() {
-	uint8_t* r = _reg8[_y]; // select register to increment
+	uint8_t* r = reg8(_y); // select register to increment
 	if (!r) {
 		/* (HL) */
 		switch (_step) {
 		case 0: // initiate read from HL to Z
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			if (!process_hlptr()) return;
+			_ctx.start_mem_read_cycle(_hl_ptr, _regs.REG_Z);
 			return;
 		case 1: // set r to Z instead
 			r = &_regs.REG_Z;
 			_ctx.start_bogus_cycle(1); // also run one bogus cycle before we write the value back
 			break;
 		case 2: // write Z back to HL
-			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z);
+			_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
 			return;
 		default: // reset 
 			reset();
@@ -34,11 +35,12 @@ void z80_instr_decoder::exec_inc_r8() {
 }
 
 void z80_instr_decoder::exec_dec_r8() {
-	uint8_t* r = _reg8[_y]; // select register to decrement
+	uint8_t* r = reg8(_y); // select register to decrement
 	if (!r) {
 		/* (HL) */
 		switch (_step) {
 		case 0: // initiate read from HL to Z
+			if (!process_hlptr()) return;
 			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
 			return;
 		case 1: // set r to Z instead
@@ -46,7 +48,7 @@ void z80_instr_decoder::exec_dec_r8() {
 			_ctx.start_bogus_cycle(1); // also run one bogus cycle before we write the value back
 			break;
 		case 2: // write Z back to HL
-			_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z);
+			_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
 			return;
 		default: // reset 
 			reset();
@@ -66,8 +68,8 @@ void z80_instr_decoder::exec_dec_r8() {
 
 void z80_instr_decoder::exec_incdec_r16() {
 	if (!_step) {
-		if (_y & 1) (*_reg16[_y >> 1])--; // DEC r16
-		else (*_reg16[_y >> 1])++; // INC r16
+		if (_y & 1) (*reg16(_y >> 1))--; // DEC r16
+		else (*reg16(_y >> 1))++; // INC r16
 		_ctx.start_bogus_cycle(2); // insert two bogus cycles
 	} else reset();
 }
@@ -75,7 +77,7 @@ void z80_instr_decoder::exec_incdec_r16() {
 
 
 void z80_instr_decoder::exec_ld16_p16() {
-	uint16_t* reg = _reg16[_y >> 1]; // ptr to register to read from/write to
+	uint16_t* reg = reg16(_y >> 1); // ptr to register to read from/write to
 	switch (_step) {
 	case 0:
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_Z); // ptr low byte
@@ -99,7 +101,7 @@ void z80_instr_decoder::exec_ld16_p16() {
 
 void z80_instr_decoder::exec_ld8_p16() {
 	int s = _step; // for streamlining
-	uint16_t* ptr = _reg16[_y >> 1]; // ptr to 16-bit address to read from/write to
+	uint16_t* ptr = reg16(_y >> 1); // ptr to 16-bit address to read from/write to
 	if ((_y & 0b110) == 0b110) {
 		/* LD (nn),A / LD A,(nn) */
 		switch (_step) {
@@ -124,7 +126,7 @@ void z80_instr_decoder::exec_ld8_p16() {
 }
 
 void z80_instr_decoder::exec_ld_i16() {
-	uint16_t* r = _reg16[_y >> 1]; // ptr to register to load to
+	uint16_t* r = reg16(_y >> 1); // ptr to register to load to
 	switch (_step) {
 	case 0:
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, *LB_PTR(r));
@@ -140,7 +142,7 @@ void z80_instr_decoder::exec_ld_i16() {
 
 void z80_instr_decoder::exec_add_hl_r16() {
 	if (!_step) {
-		uint16_t reg = *_reg16[_y >> 1]; // register to add to HL
+		uint16_t reg = *reg16(_y >> 1); // register to add to HL
 		uint32_t tmp = _regs.REG_HL + reg; // temporary result register
 		_regs.REG_F =
 			((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result's high byte, and copy bits 3 and 5 from there
@@ -156,14 +158,26 @@ void z80_instr_decoder::exec_add_hl_r16() {
 }
 
 void z80_instr_decoder::exec_ld_i8() {
-	uint8_t* r = _reg8[_y]; // register to write to
+	uint8_t* r = reg8(_y); // register to write to
 	switch (_step) {
 	case 0:
+		if (!r && !process_hlptr(0, false)) return; // we need _hl_ptr but it's not ready yet (note that we don't want process_hlptr to inject bogus cycles nor set _hlptr_ready here - we'll do that ourselves)
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, (r) ? *r : _regs.REG_Z); // read directly into the register if it's not (HL); otherwise, we read into a temporary one
 		break;
 	case 1:
-		if (r) reset(); // not (HL) - we can end here
-		else _ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z); // write what we just read from the prev step into (HL)
+		if (r) {
+			reset();
+			return; // not (HL) - we can end here
+		}
+		if (_mod != Z80_MOD_NONE && !_hlptr_ready) {
+			/* inject 2 extra clock cycles to emulate d offset calculation */
+			_ctx.start_bogus_cycle(2);
+			_hlptr_ready = true;
+			_step--;
+			return;
+		}
+
+		_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z); // write what we just read from the prev step into (HL)
 		break;
 	default:
 		reset();

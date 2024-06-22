@@ -96,11 +96,12 @@ void z80_instr_decoder::exec_alu_stub() {
 }
 
 void z80_instr_decoder::exec_main_q2() {
-	const uint8_t* src = _reg8[_z]; // decode source register
+	const uint8_t* src = reg8(_z); // decode source register
 	if (!src) {
 		if (!_step) {
 			/* stage memory read from (HL) to one of our temp regs */
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			if (!process_hlptr()) return;
+			_ctx.start_mem_read_cycle(_hl_ptr, _regs.REG_Z);
 			return;
 		}
 	} else _regs.REG_Z = *src;
