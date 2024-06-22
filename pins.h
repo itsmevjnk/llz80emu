@@ -1,6 +1,7 @@
 #pragma once
 
-#include "pch.h"
+#include <stddef.h>
+#include <stdint.h>
 
 namespace llz80emu {
 	/* Z80 CPU pin bit number (not corresponding to actual pin numbers!) */

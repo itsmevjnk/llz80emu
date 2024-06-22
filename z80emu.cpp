@@ -1,5 +1,5 @@
-#include "pch.h"
 #include "z80emu.h"
+#include <string.h>
 
 using namespace llz80emu;
 

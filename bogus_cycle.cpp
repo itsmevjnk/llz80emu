@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "cycle.h"
 
 using namespace llz80emu;

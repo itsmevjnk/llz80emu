@@ -1,5 +1,8 @@
 #pragma once
 
+//#include "z80emu.h"
+#include "registers.h"
+
 namespace llz80emu {
 	class z80emu;
 

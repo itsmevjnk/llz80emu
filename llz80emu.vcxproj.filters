@@ -17,9 +17,6 @@
     <ClInclude Include="z80emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="pins.h">
       <Filter>Header Files</Filter>
     </ClInclude>

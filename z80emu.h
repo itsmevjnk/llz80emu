@@ -1,6 +1,9 @@
 #pragma once
 
-#include "pch.h"
+#include "pins.h"
+#include "registers.h"
+#include "cycle.h"
+#include "instr_decoder.h"
 
 /* dllexport/dllimport macro for Windows */
 #if !defined(LLZ80EMU_API) // allow overriding

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "pch.h"
+#include "pins.h"
+#include "registers.h"
 
 namespace llz80emu {
 	class z80_cycle {

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "pch.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /* macro for getting pointer of low/high byte of a 16-bit register given its pointer */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
