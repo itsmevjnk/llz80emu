@@ -122,7 +122,7 @@ void z80_instr_decoder::exec_ld8_p16() {
 		if (_y & 1) _ctx.start_mem_read_cycle(*ptr, _regs.REG_A); // LD A,(BC/DE/nn)
 		else _ctx.start_mem_write_cycle(*ptr, _regs.REG_A); // LD (BC/DE/nn),A
 	}
-	else _ctx.start_fetch_cycle(); // restart
+	else reset(); // restart
 }
 
 void z80_instr_decoder::exec_ld_i16() {
