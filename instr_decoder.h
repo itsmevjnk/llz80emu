@@ -196,7 +196,7 @@ namespace llz80emu {
 		void exec_ed_q1();
 		void exec_io_r8(bool out);
 		void exec_adc_sbc_hl_r16();
-		void exec_ld_r16_p16();
+		//void exec_ld_r16_p16();
 		void exec_ld_ir(); // LD I,A / LD R,A / LD A,I / LD A,R
 		void exec_bcd_rotate(); // RRD / RLD
 

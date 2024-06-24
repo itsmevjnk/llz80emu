@@ -30,6 +30,7 @@ void z80_instr_decoder::exec_cond_ret() {
 		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_PCH);
 		break;
 	default:
+		_regs.MEMPTR = _regs.REG_PC;
 		reset(); // done
 		break;
 	}
@@ -44,6 +45,7 @@ void z80_instr_decoder::exec_uncond_ret() {
 		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_PCH);
 		break;
 	default:
+		_regs.MEMPTR = _regs.REG_PC;
 		reset();
 		break;
 	}
@@ -58,6 +60,7 @@ void z80_instr_decoder::exec_jp(bool cond) {
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_W); // read high byte
 		break;
 	default:
+		_regs.MEMPTR = _regs.REG_WZ;
 		if (!cond || check_branch_condition(_regs.REG_F, _y)) _regs.REG_PC = _regs.REG_WZ; // do the branch
 		reset();
 		break;
@@ -73,6 +76,7 @@ void z80_instr_decoder::exec_call(bool cond) {
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_W); // read high byte
 		break;
 	case 2:
+		_regs.MEMPTR = _regs.REG_WZ;
 		if (!cond || check_branch_condition(_regs.REG_F, _y)) _ctx.start_bogus_cycle(1); // insert 1 extra cycle if we take the branch
 		else reset();
 		break;
@@ -126,8 +130,14 @@ void z80_instr_decoder::exec_io_i8(bool out, uint8_t& reg) {
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_Z); // read address to Z
 		break;
 	case 1:
-		if (out) _ctx.start_io_write_cycle((reg << 8) | _regs.REG_Z, reg);
-		else _ctx.start_io_read_cycle((reg << 8) | _regs.REG_Z, reg);
+		if (out) {
+			_regs.MEMPTR = ((_regs.REG_Z + 1) & 0xFF) | ((uint16_t)reg << 8); // NOTE: for BM1 the upper byte is set to 0
+			_ctx.start_io_write_cycle((reg << 8) | _regs.REG_Z, reg);
+		}
+		else {
+			_regs.MEMPTR = ((uint16_t)reg << 8) + _regs.REG_Z + 1;
+			_ctx.start_io_read_cycle((reg << 8) | _regs.REG_Z, reg);
+		}
 		break;
 	default:
 		reset();
@@ -148,6 +158,7 @@ void z80_instr_decoder::exec_rst() {
 		break;
 	case 3:
 		_regs.REG_PC = _y << 3; // set PC to the selected vector
+		_regs.MEMPTR = _regs.REG_PC;
 		reset();
 		break;
 	}
@@ -168,7 +179,7 @@ void z80_instr_decoder::exec_ex_stack_hl() {
 		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_L);
 		break;
 	default:
-		_regs.REG_HL = _regs.REG_WZ; // do the exchange
+		_regs.MEMPTR = _regs.REG_HL = _regs.REG_WZ; // do the exchange
 		reset();
 		break;
 	}

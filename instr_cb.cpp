@@ -109,7 +109,7 @@ void z80_instr_decoder::exec_bit() {
 		_regs.Q =
 			(_regs.REG_F & Z80_FLAG_C) // preserve C flag
 			| Z80_FLAG_H
-			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5)); // copy bit 3 and 5 from operand instead of result
+			| (((!reg || _mod != Z80_MOD_NONE) ? (_regs.MEMPTR >> 8) : _regs.REG_Z) & (Z80_FLAG_F3 | Z80_FLAG_F5)); // copy bit 3 and 5 from operand (or high byte of MEMPTR for (HL))
 		_regs.REG_Z &= (1 << _y);
 		_regs.Q = _regs.REG_F =
 			_regs.Q

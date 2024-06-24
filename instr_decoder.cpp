@@ -82,7 +82,7 @@ void z80_instr_decoder::next_step() {
 			_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_PCL);
 			break;
 		default: // restart at 0x66
-			_regs.REG_PC = 0x0066;
+			_regs.MEMPTR = _regs.REG_PC = 0x0066;
 			reset();
 			break;
 		}
@@ -105,7 +105,7 @@ void z80_instr_decoder::next_step() {
 		case 3:
 			if (_regs.int_mode == 1) {
 				/* mode 1 - jump to 0x0038 */
-				_regs.REG_PC = 0x0038;
+				_regs.MEMPTR = _regs.REG_PC = 0x0038;
 				reset();
 			} else {
 				/* mode 2 - calculate new vector and read PC from there */
@@ -117,6 +117,7 @@ void z80_instr_decoder::next_step() {
 			_ctx.start_mem_read_cycle(_regs.REG_WZ + 1, _regs.REG_PCH);
 			break;
 		default:
+			_regs.MEMPTR = _regs.REG_PC;
 			reset();
 			break;
 		}
@@ -202,7 +203,7 @@ bool z80_instr_decoder::process_hlptr(int extra_cycles, bool set_hlptr_ready) {
 
 	if (!_hlptr_ready) {
 		/* displacement byte has just been read */
-		_hl_ptr = ((_mod == Z80_MOD_DD) ? _regs.REG_IX : _regs.REG_IY) + _mod_d; // calculate IX+d / IY+d
+		_regs.MEMPTR = _hl_ptr = ((_mod == Z80_MOD_DD) ? _regs.REG_IX : _regs.REG_IY) + _mod_d; // calculate IX+d / IY+d
 		if (set_hlptr_ready) _hlptr_ready = true;
 		if (!extra_cycles) return true; // no extra cycles required
 		_ctx.start_bogus_cycle(extra_cycles); // extra cycles for calculating address

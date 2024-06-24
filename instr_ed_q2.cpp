@@ -30,10 +30,14 @@ void z80_instr_decoder::exec_blk_ld() {
 		_ctx.start_bogus_cycle(2);
 		break;
 	case 3:
-		if (!(_y & 0b010) || !(_regs.REG_F & Z80_FLAGBIT_PV)) reset(); // BC == 0 or non-repeating instruction
+		if (!(_y & 0b010) || !(_regs.REG_F & Z80_FLAG_PV)) reset(); // BC == 0 or non-repeating instruction
 		else {
 			_regs.REG_PC -= 2; // rewind PC
 			_ctx.start_bogus_cycle(5);
+		}
+		if (_y & 0b010) {
+			/* LDIR/LDDR */
+			if (_regs.REG_BC) _regs.MEMPTR = _regs.REG_PC + 1;
 		}
 		break;
 	default:
@@ -64,9 +68,13 @@ void z80_instr_decoder::exec_blk_cp() {
 		}
 		break;
 	case 2:
-		if (!(_y & 0b010) || !(_regs.REG_F & Z80_FLAGBIT_PV)) reset(); // BC == 0 or non-repeating instruction
+		if (!(_y & 0b010) || !(_regs.REG_F & Z80_FLAG_PV) || (_regs.REG_F & Z80_FLAG_Z)) {
+			reset(); // BC == 0, non-repeating instruction, or Z is set
+			if (_y & 1) _regs.MEMPTR--; else _regs.MEMPTR++;
+		}
 		else {
 			_regs.REG_PC -= 2; // rewind PC
+			_regs.MEMPTR = _regs.REG_PC + 1;
 			_ctx.start_bogus_cycle(5);
 		}
 		break;
@@ -88,13 +96,20 @@ void z80_instr_decoder::exec_blk_in() {
 		_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z);
 		break;
 	case 3:
-		if (_y & 1) _regs.REG_HL--; else _regs.REG_HL++;
+		if (_y & 1) {
+			_regs.REG_HL--;
+			_regs.MEMPTR = _regs.REG_BC + 1;
+		}
+		else {
+			_regs.REG_HL++;
+			_regs.MEMPTR = _regs.REG_BC - 1;
+		}
 		_regs.REG_B--;
 		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_C | Z80_FLAG_S | Z80_FLAG_H | Z80_FLAG_PV)) // NOTE: S, H and PV are undefined
 			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5)) // TODO: check if this is correct
 			| ((bool)!_regs.REG_B << Z80_FLAGBIT_Z);
-		if (!(_y & 0b010) || !(_regs.REG_F & Z80_FLAGBIT_PV)) reset(); // B == 0 or non-repeating instruction
+		if (!(_y & 0b010) || (_regs.REG_F & Z80_FLAG_Z)) reset(); // B == 0 or non-repeating instruction
 		else {
 			_regs.REG_PC -= 2; // rewind PC
 			_ctx.start_bogus_cycle(5);
@@ -118,13 +133,20 @@ void z80_instr_decoder::exec_blk_out() {
 		_ctx.start_io_write_cycle(_regs.REG_BC, _regs.REG_Z);
 		break;
 	case 3:
-		if (_y & 1) _regs.REG_HL--; else _regs.REG_HL++;
+		if (_y & 1) {
+			_regs.REG_HL--;
+			_regs.MEMPTR = _regs.REG_BC + 1;
+		}
+		else {
+			_regs.REG_HL++;
+			_regs.MEMPTR = _regs.REG_BC - 1;
+		}
 		_regs.REG_B--;
 		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_C | Z80_FLAG_S | Z80_FLAG_H | Z80_FLAG_PV)) // NOTE: S, H and PV are undefined
 			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5)) // TODO: check if this is correct
 			| ((bool)!_regs.REG_B << Z80_FLAGBIT_Z);
-		if (!(_y & 0b010) || !(_regs.REG_F & Z80_FLAGBIT_PV)) reset(); // B == 0 or non-repeating instruction
+		if (!(_y & 0b010) || (_regs.REG_F & Z80_FLAG_Z)) reset(); // B == 0 or non-repeating instruction
 		else {
 			_regs.REG_PC -= 2; // rewind PC
 			_ctx.start_bogus_cycle(5);

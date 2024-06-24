@@ -90,12 +90,13 @@ void z80_instr_decoder::exec_ld16_p16() {
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_W); // ptr high byte
 		break;
 	case 2: // read/write reg low byte
-		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ + 0, *LB_PTR(reg));
-		else _ctx.start_mem_write_cycle(_regs.REG_WZ + 0, *LB_PTR(reg));
+		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ++, *LB_PTR(reg));
+		else _ctx.start_mem_write_cycle(_regs.REG_WZ++, *LB_PTR(reg));
 		break;
 	case 3: // read/write reg high byte
-		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ + 1, *HB_PTR(reg));
-		else _ctx.start_mem_write_cycle(_regs.REG_WZ + 1, *HB_PTR(reg));
+		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ, *HB_PTR(reg));
+		else _ctx.start_mem_write_cycle(_regs.REG_WZ, *HB_PTR(reg));
+		_regs.MEMPTR = _regs.REG_WZ;
 		break;
 	case 4: // restart
 		reset();
@@ -128,7 +129,13 @@ void z80_instr_decoder::exec_ld8_p16() {
 		if (_y & 1) _ctx.start_mem_read_cycle(*ptr, _regs.REG_A); // LD A,(BC/DE/nn)
 		else _ctx.start_mem_write_cycle(*ptr, _regs.REG_A); // LD (BC/DE/nn),A
 	}
-	else reset(); // restart
+	else {
+		/* set MEMPTR */
+		_regs.MEMPTR = *ptr + 1;
+		if(!(_y & 1)) _regs.MEMPTR = ((uint16_t)_regs.REG_A << 8) | (_regs.MEMPTR & 0xFF); // NOTE: for BM1 (Soviet Z80 clone) upper 8 bits of MEMPTR is set to 0
+
+		reset(); // restart
+	}
 }
 
 void z80_instr_decoder::exec_ld_i16() {
@@ -151,6 +158,7 @@ void z80_instr_decoder::exec_ld_i16() {
 void z80_instr_decoder::exec_add_hl_r16() {
 	if (!_step) {
 		uint16_t reg = *reg16(_y >> 1); // register to add to HL
+		_regs.MEMPTR = _regs.REG_HL + 1;
 		uint32_t tmp = _regs.REG_HL + reg; // temporary result register
 		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_S | Z80_FLAG_Z | Z80_FLAG_PV)) // S, Z and P/V are unaffected
@@ -203,7 +211,7 @@ void z80_instr_decoder::exec_jr_stub(bool take_branch, int step_start) {
 		if (!take_branch) reset(); // not taking branch - restart now
 		else {
 			_regs.REG_W = (_regs.REG_Z >> 7) * 0xFF; // lazy 8->16bit sign extend operation
-			_regs.REG_PC += _regs.REG_WZ;
+			_regs.REG_PC += _regs.REG_WZ; _regs.MEMPTR = _regs.REG_PC;
 			_ctx.start_bogus_cycle(5); // insert 5 bogus cycles
 		}
 		break;

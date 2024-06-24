@@ -19,6 +19,7 @@ void z80_instr_decoder::exec_io_r8(bool out) {
 				| (parity(_regs.REG_Z) << Z80_FLAGBIT_PV);
 			if (_y != 0b110) *reg8(_y) = _regs.REG_Z; // copy result
 		}
+		_regs.MEMPTR = _regs.REG_BC + 1;
 		reset();
 		break;
 	}
@@ -28,6 +29,7 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 	if (!_step) {
 		uint32_t tmp = 0;
 		uint16_t addend = *reg16(_y >> 1);
+		_regs.MEMPTR = _regs.REG_HL + 1;
 		if (_y & 1) {
 			/* ADC */
 			tmp = _regs.REG_HL + addend + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1);
@@ -56,30 +58,31 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 	else reset();
 }
 
-void z80_instr_decoder::exec_ld_r16_p16() {
-	_regs.Q = 0; // not setting flags
-
-	uint16_t* reg = reg16(_y >> 1);
-	switch (_step) {
-	case 0:
-		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_Z);
-		break;
-	case 1:
-		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_W);
-		break;
-	case 2: // read/write low byte
-		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ + 0, *LB_PTR(reg));
-		else _ctx.start_mem_write_cycle(_regs.REG_WZ + 0, *LB_PTR(reg));
-		break;
-	case 3: // read/write high byte
-		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ + 1, *HB_PTR(reg));
-		else _ctx.start_mem_write_cycle(_regs.REG_WZ + 1, *HB_PTR(reg));
-		break;
-	default:
-		reset();
-		break;
-	}
-}
+//void z80_instr_decoder::exec_ld_r16_p16() {
+//	_regs.Q = 0; // not setting flags
+//
+//	uint16_t* reg = reg16(_y >> 1);
+//	switch (_step) {
+//	case 0:
+//		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_Z);
+//		break;
+//	case 1:
+//		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_W);
+//		break;
+//	case 2: // read/write low byte
+//		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ++, *LB_PTR(reg));
+//		else _ctx.start_mem_write_cycle(_regs.REG_WZ++, *LB_PTR(reg));
+//		break;
+//	case 3: // read/write high byte
+//		if (_y & 1) _ctx.start_mem_read_cycle(_regs.REG_WZ, *HB_PTR(reg));
+//		else _ctx.start_mem_write_cycle(_regs.REG_WZ, *HB_PTR(reg));
+//		_regs.MEMPTR = _regs.REG_WZ;
+//		break;
+//	default:
+//		reset();
+//		break;
+//	}
+//}
 
 void z80_instr_decoder::exec_ld_ir() {
 	if (!_step) {
@@ -125,6 +128,7 @@ void z80_instr_decoder::exec_bcd_rotate() {
 			| (parity(_regs.REG_A) << Z80_FLAGBIT_PV)
 			| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5))
 			| ((bool)!_regs.REG_A << Z80_FLAGBIT_Z);
+		_regs.MEMPTR = _regs.REG_HL + 1;
 		reset();
 		break;
 	}
@@ -142,7 +146,8 @@ void z80_instr_decoder::exec_ed_q1() {
 		exec_adc_sbc_hl_r16();
 		break;
 	case 0b011: // LD (nn),BC/DE/HL/SP / LD BC/DE/HL/SP,(nn)
-		exec_ld_r16_p16();
+		//exec_ld_r16_p16();
+		exec_ld16_p16();
 		break;
 	case 0b100: // NEG - reuse exec_alu_stub() for this
 		_y = 0b010; // SUB

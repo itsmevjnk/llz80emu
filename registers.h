@@ -98,6 +98,7 @@ namespace llz80emu {
 #define REG_Z					WZ.bytes.lo
 		z80_regpair_t WZ;
 		uint8_t Q; // undocumented - contains assembled flags register value
+		uint16_t MEMPTR; // undocumented - WZ should've been used but that would complicate things
 
 		/* instruction fetch */
 		uint8_t instr; // last instruction byte
