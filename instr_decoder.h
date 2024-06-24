@@ -168,7 +168,7 @@ namespace llz80emu {
 		void exec_ld_i16();
 		void exec_add_hl_r16();
 		void exec_ld_i8();
-		void exec_jr_stub(bool take_branch = true); // JR/DJNZ stub (read displacement byte to Z, then perform relative jump if take_branch is true)
+		void exec_jr_stub(bool take_branch = true, int step_start = 0); // JR/DJNZ stub (read displacement byte to Z, then perform relative jump if take_branch is true)
 		void exec_shift_a();
 
 		/* main quadrant 1 (xx = 01) - LD and HALT */

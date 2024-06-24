@@ -145,12 +145,11 @@ void z80_instr_decoder::exec_add_hl_r16() {
 		uint16_t reg = *reg16(_y >> 1); // register to add to HL
 		uint32_t tmp = _regs.REG_HL + reg; // temporary result register
 		_regs.REG_F =
-			((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result's high byte, and copy bits 3 and 5 from there
-			| (((bool)!(tmp & 0xFFFF)) << Z80_FLAGBIT_Z) // Z contains whether the result is zero
-			| (((_regs.REG_HL & (1 << 15)) == (reg & (1 << 15)) && (_regs.REG_HL & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
+			(_regs.REG_F & (Z80_FLAG_S | Z80_FLAG_Z | Z80_FLAG_PV)) // S, Z and P/V are unaffected
+			| ((tmp >> 8) & (Z80_FLAG_F3 | Z80_FLAG_F5)) // copy bits 3 and 5 from high byte
 			| (((bool)(tmp & 0xFFFF0000)) << Z80_FLAGBIT_C) // C contains whether there's a carry (unsigned overflow)
 			| (0 << Z80_FLAGBIT_N) // reset subtract flag
-			| (((bool)(((_regs.REG_HL & 0x0F00) + (reg & 0x0F00)) & ~0x0F00)) << Z80_FLAGBIT_H); // crude way to detect half carry
+			| (((bool)(((_regs.REG_HL & 0x0FFF) + (reg & 0x0FFF)) & 0xF000)) << Z80_FLAGBIT_H); // crude way to detect half carry
 		_regs.REG_HL = (uint16_t)tmp; // commit result to HL
 
 		_ctx.start_bogus_cycle(7); // insert 7 bogus cycles here (since we did everything in one cycle now)
@@ -185,8 +184,8 @@ void z80_instr_decoder::exec_ld_i8() {
 	}
 }
 
-void z80_instr_decoder::exec_jr_stub(bool take_branch) {
-	switch (_step) {
+void z80_instr_decoder::exec_jr_stub(bool take_branch, int step_start) {
+	switch (_step - step_start) {
 	case 0:
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, _regs.REG_Z); // read displacement byte into Z
 		break;
@@ -232,8 +231,11 @@ void z80_instr_decoder::exec_main_q0() {
 			reset();
 			break;
 		case 0b010: // DJNZ d
-			if (!_step) _regs.REG_B--; // so we don't decrement B multiple times
-			exec_jr_stub(_regs.REG_B); // take branch if B is non-zero
+			if (!_step) {
+				_regs.REG_B--; // so we don't decrement B multiple times
+				_ctx.start_bogus_cycle(1);
+			}
+			else exec_jr_stub(_regs.REG_B, 1); // take branch if B is non-zero
 			break;
 		case 0b011: // JR d (unconditional)
 			exec_jr_stub();
@@ -274,22 +276,30 @@ void z80_instr_decoder::exec_main_q0() {
 		break;
 	case 0b111:
 		switch (_y) {
-		case 0b100: // DAA
-			if ((_regs.REG_A & 0x0F) > 0x9 || (_regs.REG_F & Z80_FLAG_H)) {
-				/* low nibble correction */
-				_regs.REG_F = (_regs.REG_F & ~Z80_FLAG_H) | (((_regs.REG_A & 0x0F) > 0x9) << Z80_FLAGBIT_H); // predict half-carry
-				_regs.REG_A += 0x06;
+		case 0b100: // DAA (adapted from https://ehaskins.com/2018-01-30%20Z80%20DAA/)
+			_regs.REG_Z = _regs.REG_F; // use Z to store old flags (so we don't have to create another variable)
+			_regs.REG_W = 0; // use W for correction value (same reason as above)
+			_regs.REG_F &= Z80_FLAG_N;
+			if ((_regs.REG_Z & Z80_FLAG_H) || (_regs.REG_A & 0xF) > 9)
+				_regs.REG_W |= 0x6;
+			if ((_regs.REG_Z & Z80_FLAG_C) || (_regs.REG_A > 0x99)) {
+				_regs.REG_W |= 0x60;
+				_regs.REG_F |= Z80_FLAG_C;
 			}
-			if ((_regs.REG_A & 0xF0) > 0x90 || (_regs.REG_F & Z80_FLAG_C)) {
-				/* high nibble correction */
-				_regs.REG_F |= Z80_FLAGBIT_C;
-				_regs.REG_A += 0x60;
+			// if (_regs.REG_Z & Z80_FLAG_N) _regs.REG_A -= _regs.REG_W; else _regs.REG_A += _regs.REG_W;
+			if (_regs.REG_Z & Z80_FLAG_N) {
+				_regs.REG_F |= ((_regs.REG_A & 0x0F) < (_regs.REG_W & 0x0F)) << Z80_FLAGBIT_H;
+				_regs.REG_A -= _regs.REG_W;
 			}
-			_regs.REG_F =
-				(_regs.REG_F & (Z80_FLAG_C | Z80_FLAG_H | Z80_FLAG_N)) // preserve C and H (from above), as well as N
-				| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // copy sign bit and bits 3 and 5 from A
-				| (!_regs.REG_A << Z80_FLAGBIT_Z)
-				| (parity(_regs.REG_A) << Z80_FLAGBIT_PV); // calculate parity of A and store in P/V
+			else {
+				_regs.REG_F |= (bool)((_regs.REG_A & 0x0F) + (_regs.REG_W & 0x0F) & 0xF0) << Z80_FLAGBIT_H;
+				_regs.REG_A += _regs.REG_W;
+			}
+			_regs.REG_F |=
+				((bool)!_regs.REG_A << Z80_FLAGBIT_Z)
+				| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5))
+				| (parity(_regs.REG_A) << Z80_FLAGBIT_PV);
+			break;
 		case 0b101: // CPL
 			_regs.REG_A ^= 0xFF;
 			_regs.REG_F =
@@ -299,11 +309,20 @@ void z80_instr_decoder::exec_main_q0() {
 			reset();
 			break;
 		case 0b110: // SCF
-			_regs.REG_F |= Z80_FLAG_C;
+			_regs.REG_F =
+				(_regs.REG_F & ~(Z80_FLAG_H | Z80_FLAG_N | Z80_FLAG_F3 | Z80_FLAG_F5))
+				| (_regs.REG_A & (Z80_FLAG_F3 | Z80_FLAG_F5))
+				| Z80_FLAG_C;
 			reset();
 			break;
 		case 0b111: // CCF
-			_regs.REG_F &= ~Z80_FLAG_C;
+			_regs.REG_F =
+				(
+					(_regs.REG_F & ~(Z80_FLAG_H | Z80_FLAG_N | Z80_FLAG_F3 | Z80_FLAG_F5))
+					| (((_regs.REG_F >> Z80_FLAGBIT_C) & 1) << Z80_FLAGBIT_H)
+					| (_regs.REG_A & (Z80_FLAG_F3 | Z80_FLAG_F5))
+				)
+				^ Z80_FLAG_C;
 			reset();
 			break;
 		default: // RLCA/RRCA/RLA/RRA
