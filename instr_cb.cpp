@@ -64,6 +64,7 @@ void z80_instr_decoder::exec_shift_rot() {
 		case 0b110: // SLL
 			_regs.REG_F = (_regs.REG_Z >> 7) << Z80_FLAGBIT_C; // copy bit 7 to C
 			_regs.REG_Z = (_regs.REG_Z << 1) | 1;
+			break;
 		case 0b111: // SRL
 			_regs.REG_F = (_regs.REG_Z & 1) << Z80_FLAGBIT_C; // copy bit 0 to C
 			_regs.REG_Z >>= 1;
@@ -84,7 +85,7 @@ void z80_instr_decoder::exec_shift_rot() {
 	}
 	else if (s == 1 && (!reg || _mod != Z80_MOD_NONE)) {
 		/* write back to (HL/IX+d/IY+d) */
-		_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
+		_ctx.start_mem_write_cycle((_mod == Z80_MOD_NONE) ? _regs.REG_HL : _hl_ptr, _regs.REG_Z);
 		return;
 	}
 	reset();
@@ -105,12 +106,15 @@ void z80_instr_decoder::exec_bit() {
 	if (!reg) s--; // back by 1 step (1st step is reading into Z)
 
 	if (!s) {
+		_regs.Q =
+			(_regs.REG_F & Z80_FLAG_C) // preserve C flag
+			| Z80_FLAG_H
+			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5)); // copy bit 3 and 5 from operand instead of result
 		_regs.REG_Z &= (1 << _y);
 		_regs.Q = _regs.REG_F =
-			(_regs.REG_F & Z80_FLAG_C) // preserve C only
-			| Z80_FLAG_H
+			_regs.Q
 			| ((!_regs.REG_Z) ? (Z80_FLAG_Z | Z80_FLAG_PV) : 0)
-			| (_regs.REG_Z & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5));
+			| (_regs.REG_Z & Z80_FLAG_S);
 		if (!reg || _mod != Z80_MOD_NONE) {
 			_ctx.start_bogus_cycle(1); // run 1 bogus cycle for (HL)
 			return;
@@ -145,7 +149,7 @@ void z80_instr_decoder::exec_res() {
 	}
 	else if (s == 1 && (!reg || _mod != Z80_MOD_NONE)) {
 		/* write back to (HL/IX+d/IY+d) */
-		_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
+		_ctx.start_mem_write_cycle((_mod == Z80_MOD_NONE) ? _regs.REG_HL : _hl_ptr, _regs.REG_Z);
 		return;
 	}
 	reset();
@@ -177,7 +181,7 @@ void z80_instr_decoder::exec_set() {
 	}
 	else if (s == 1 && (!reg || _mod != Z80_MOD_NONE)) {
 		/* write back to (HL/IX+d/IY+d) */
-		_ctx.start_mem_write_cycle(_hl_ptr, _regs.REG_Z);
+		_ctx.start_mem_write_cycle((_mod == Z80_MOD_NONE) ? _regs.REG_HL : _hl_ptr, _regs.REG_Z);
 		return;
 	}
 	reset();
