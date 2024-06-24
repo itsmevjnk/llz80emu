@@ -5,6 +5,8 @@
 using namespace llz80emu;
 
 void z80_instr_decoder::exec_main_q1() {
+	_regs.Q = 0; // we don't modify flags here
+
 	if(_regs.instr == 0x76) {
 		if (_mod == Z80_MOD_NONE) {
 			// HALT

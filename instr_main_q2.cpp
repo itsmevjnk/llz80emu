@@ -92,6 +92,7 @@ void z80_instr_decoder::exec_alu_stub() {
 		break;
 	}
 	if (_y != 0b111) _regs.REG_A = tmp & 0xFF; // CP discards the result
+	_regs.Q = _regs.REG_F;
 	reset();
 }
 

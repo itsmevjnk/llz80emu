@@ -12,7 +12,7 @@ void z80_instr_decoder::exec_io_r8(bool out) {
 	default:
 		if (!out) {
 			/* IN - affect flags */
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				(_regs.REG_F & Z80_FLAG_C) // all other flags are modified
 				| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5 | Z80_FLAG_S))
 				| ((bool)!_regs.REG_Z << Z80_FLAGBIT_Z)
@@ -36,7 +36,7 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 				if (!(addend & 0x7F00)) _regs.REG_F |= Z80_FLAG_PV; // overflow (0x7Fxx -> 0x80xx or 0xFFxx -> 0x00xx) - set overflow flag here
 			}
 			tmp = _regs.REG_HL + addend;
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result, and copy bits 3 and 5 (from high byte)
 				| (((bool)!(tmp & 0xFFFF)) << Z80_FLAGBIT_Z) // Z contains whether the result is zero
 				| ((_regs.REG_F & Z80_FLAG_PV) | ((_regs.REG_A & (1 << 15)) == (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
@@ -52,7 +52,7 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 				if (!(addend & 0x7F00)) _regs.REG_F |= Z80_FLAG_PV; // overflow (0x7Fxx -> 0x80xx or 0xFFxx -> 0x00xx) - set overflow flag here
 			}
 			tmp = _regs.REG_A - addend;
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result, and copy bits 3 and 5 (from high byte)
 				| (((bool)!(tmp & 0xFFFF)) << Z80_FLAGBIT_Z) // Z contains whether the result is zero
 				| ((_regs.REG_F & Z80_FLAG_PV) | (((_regs.REG_A & (1 << 15)) != (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV)) // PV contains whether an overflow occurs
@@ -67,6 +67,8 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 }
 
 void z80_instr_decoder::exec_ld_r16_p16() {
+	_regs.Q = 0; // not setting flags
+
 	uint16_t* reg = reg16(_y >> 1);
 	switch (_step) {
 	case 0:
@@ -94,7 +96,7 @@ void z80_instr_decoder::exec_ld_ir() {
 		uint8_t& ir = (_y & 1) ? _regs.REG_R : _regs.REG_I;
 		if (_y & 0b10) {
 			_regs.REG_A = ir; // LD A,I/R
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				(_regs.REG_F & Z80_FLAG_C)
 				| (_regs.iff2 << Z80_FLAGBIT_PV)
 				| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5))
@@ -128,7 +130,7 @@ void z80_instr_decoder::exec_bcd_rotate() {
 		_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z);
 		break;
 	default:
-		_regs.REG_F =
+		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & Z80_FLAG_C)
 			| (parity(_regs.REG_A) << Z80_FLAGBIT_PV)
 			| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5))
@@ -160,6 +162,7 @@ void z80_instr_decoder::exec_ed_q1() {
 	case 0b101: // RETI/RETN
 		if (!_step) _regs.iff1 = _regs.iff2; // restore IFF1
 		exec_uncond_ret(); // other than that it's the same thing as RET
+		_regs.Q = 0; // not setting flags
 		break;
 	case 0b110: // IM 0/1/2
 		switch (_y & 0b011) {
@@ -173,6 +176,7 @@ void z80_instr_decoder::exec_ed_q1() {
 			_regs.int_mode = 0;
 			break;
 		}
+		_regs.Q = 0; // not setting flags
 		reset();
 		break;
 	case 0b111: // assorted instructions
@@ -185,6 +189,7 @@ void z80_instr_decoder::exec_ed_q1() {
 			exec_bcd_rotate();
 			break;
 		default:
+			_regs.Q = 0; // not setting flags
 			reset();
 			break;
 		}

@@ -25,7 +25,7 @@ void z80_instr_decoder::exec_inc_r8() {
 		}
 	}
 	(*r)++;
-	_regs.REG_F =
+	_regs.Q = _regs.REG_F =
 		(_regs.REG_F & Z80_FLAG_C) // preserve carry flag
 		| (*r & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // copy sign bit and bits 3 and 5 from result
 		| (!*r << Z80_FLAGBIT_Z)
@@ -56,7 +56,7 @@ void z80_instr_decoder::exec_dec_r8() {
 		}
 	}
 	(*r)--;
-	_regs.REG_F =
+	_regs.Q = _regs.REG_F =
 		(_regs.REG_F & Z80_FLAG_C) // preserve carry flag
 		| (*r & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // copy sign bit and bits 3 and 5 from result
 		| (!*r << Z80_FLAGBIT_Z)
@@ -67,6 +67,8 @@ void z80_instr_decoder::exec_dec_r8() {
 }
 
 void z80_instr_decoder::exec_incdec_r16() {
+	_regs.Q = 0; // not setting flags
+
 	if (!_step) {
 		if (_y & 1) (*reg16(_y >> 1))--; // DEC r16
 		else (*reg16(_y >> 1))++; // INC r16
@@ -77,6 +79,8 @@ void z80_instr_decoder::exec_incdec_r16() {
 
 
 void z80_instr_decoder::exec_ld16_p16() {
+	_regs.Q = 0; // not setting flags
+
 	uint16_t* reg = reg16(_y >> 1); // ptr to register to read from/write to
 	switch (_step) {
 	case 0:
@@ -100,6 +104,8 @@ void z80_instr_decoder::exec_ld16_p16() {
 }
 
 void z80_instr_decoder::exec_ld8_p16() {
+	_regs.Q = 0; // not setting flags
+
 	int s = _step; // for streamlining
 	uint16_t* ptr = reg16(_y >> 1); // ptr to 16-bit address to read from/write to
 	if ((_y & 0b110) == 0b110) {
@@ -126,6 +132,8 @@ void z80_instr_decoder::exec_ld8_p16() {
 }
 
 void z80_instr_decoder::exec_ld_i16() {
+	_regs.Q = 0; // not setting flags
+
 	uint16_t* r = reg16(_y >> 1); // ptr to register to load to
 	switch (_step) {
 	case 0:
@@ -144,7 +152,7 @@ void z80_instr_decoder::exec_add_hl_r16() {
 	if (!_step) {
 		uint16_t reg = *reg16(_y >> 1); // register to add to HL
 		uint32_t tmp = _regs.REG_HL + reg; // temporary result register
-		_regs.REG_F =
+		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_S | Z80_FLAG_Z | Z80_FLAG_PV)) // S, Z and P/V are unaffected
 			| ((tmp >> 8) & (Z80_FLAG_F3 | Z80_FLAG_F5)) // copy bits 3 and 5 from high byte
 			| (((bool)(tmp & 0xFFFF0000)) << Z80_FLAGBIT_C) // C contains whether there's a carry (unsigned overflow)
@@ -157,6 +165,8 @@ void z80_instr_decoder::exec_add_hl_r16() {
 }
 
 void z80_instr_decoder::exec_ld_i8() {
+	_regs.Q = 0; // not setting flags
+
 	uint8_t* r = reg8(_y); // register to write to
 	switch (_step) {
 	case 0:
@@ -207,14 +217,15 @@ void z80_instr_decoder::exec_shift_a() {
 	bool dir = (_y & 0b001), c = !(_y & 0b010); // decode instruction: dir = true for RRCA/RRA (right shift), and c = true if the instruction is RLCA/RRCA
 
 	bool shift_bit = _regs.REG_F & Z80_FLAG_C; // bit to use for bit 7 (RRA/RRCA) or bit 0 (RLA/RLCA), set to old carry bit (for RLA/RRA)
-	_regs.REG_F = 
+	_regs.Q = 
 		(_regs.REG_F & ~(Z80_FLAG_C | Z80_FLAG_N | Z80_FLAG_H | Z80_FLAG_F3 | Z80_FLAG_F5)) // reset C, as well as N and H (as described) and F3 and F5 (for copying bits from A)
 		| ((dir) ? (_regs.REG_A & 1) : (_regs.REG_A >> 7)) << Z80_FLAGBIT_C; // set carry flag to LSB (RRCA/RRA) or MSB (RLCA/RLA)
-	if(c) shift_bit = _regs.REG_F & Z80_FLAG_C; // RLCA/RRCA uses new carry flag bit instead
+	if (c) shift_bit = _regs.Q & Z80_FLAG_C; // RLCA/RRCA uses new carry flag bit instead
 
 	if (dir) _regs.REG_A = (_regs.REG_A >> 1) | (shift_bit << 7); // right shift
 	else _regs.REG_A = (_regs.REG_A << 1) | ((uint8_t)shift_bit); // left shift
-	_regs.REG_F |= _regs.REG_A & (Z80_FLAG_F3 | Z80_FLAG_F5); // copy bits to flag reg
+	_regs.Q |= _regs.REG_A & (Z80_FLAG_F3 | Z80_FLAG_F5); // copy bits to flag reg
+	_regs.REG_F = _regs.Q;
 
 	reset(); // done
 }
@@ -227,7 +238,7 @@ void z80_instr_decoder::exec_main_q0() {
 			reset();
 			break;
 		case 0b001: // EX AF, AF'
-			swap(_regs.REG_AF, _regs.REG_AF_S);
+			swap(_regs.REG_AF, _regs.REG_AF_S); // we don't assemble flags here so we'll still set Q to 0
 			reset();
 			break;
 		case 0b010: // DJNZ d
@@ -253,6 +264,7 @@ void z80_instr_decoder::exec_main_q0() {
 			exec_jr_stub(_regs.REG_F & Z80_FLAG_C);
 			break;
 		}
+		_regs.Q = 0; // all of the above instructions do not modify flags
 		break;
 	case 0b001:
 		if (_y & 1) exec_add_hl_r16(); // ADD HL,BC/DE/HL/SP
@@ -277,50 +289,51 @@ void z80_instr_decoder::exec_main_q0() {
 	case 0b111:
 		switch (_y) {
 		case 0b100: // DAA (adapted from https://ehaskins.com/2018-01-30%20Z80%20DAA/)
-			_regs.REG_Z = _regs.REG_F; // use Z to store old flags (so we don't have to create another variable)
+			_regs.Q = _regs.REG_F & Z80_FLAG_N;
 			_regs.REG_W = 0; // use W for correction value (same reason as above)
-			_regs.REG_F &= Z80_FLAG_N;
-			if ((_regs.REG_Z & Z80_FLAG_H) || (_regs.REG_A & 0xF) > 9)
+			if ((_regs.REG_F & Z80_FLAG_H) || (_regs.REG_A & 0xF) > 9)
 				_regs.REG_W |= 0x6;
-			if ((_regs.REG_Z & Z80_FLAG_C) || (_regs.REG_A > 0x99)) {
+			if ((_regs.REG_F & Z80_FLAG_C) || (_regs.REG_A > 0x99)) {
 				_regs.REG_W |= 0x60;
-				_regs.REG_F |= Z80_FLAG_C;
+				_regs.Q |= Z80_FLAG_C;
 			}
 			// if (_regs.REG_Z & Z80_FLAG_N) _regs.REG_A -= _regs.REG_W; else _regs.REG_A += _regs.REG_W;
-			if (_regs.REG_Z & Z80_FLAG_N) {
-				_regs.REG_F |= ((_regs.REG_A & 0x0F) < (_regs.REG_W & 0x0F)) << Z80_FLAGBIT_H;
+			if (_regs.REG_F & Z80_FLAG_N) {
+				_regs.Q |= ((_regs.REG_A & 0x0F) < (_regs.REG_W & 0x0F)) << Z80_FLAGBIT_H;
 				_regs.REG_A -= _regs.REG_W;
 			}
 			else {
-				_regs.REG_F |= (bool)((_regs.REG_A & 0x0F) + (_regs.REG_W & 0x0F) & 0xF0) << Z80_FLAGBIT_H;
+				_regs.Q |= (bool)((_regs.REG_A & 0x0F) + (_regs.REG_W & 0x0F) & 0xF0) << Z80_FLAGBIT_H;
 				_regs.REG_A += _regs.REG_W;
 			}
-			_regs.REG_F |=
+			_regs.Q |=
 				((bool)!_regs.REG_A << Z80_FLAGBIT_Z)
 				| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5))
 				| (parity(_regs.REG_A) << Z80_FLAGBIT_PV);
+			_regs.REG_F = _regs.Q;
+			reset();
 			break;
 		case 0b101: // CPL
 			_regs.REG_A ^= 0xFF;
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				(_regs.REG_F & ~(Z80_FLAG_F3 | Z80_FLAG_F5)) // erase F3 and F5 flags so we can copy them from A
 				| (_regs.REG_A & (Z80_FLAG_F3 | Z80_FLAG_F5)) // copy bits 3 and 5 from A
 				| Z80_FLAG_H | Z80_FLAG_N; // set H and N flags
 			reset();
 			break;
 		case 0b110: // SCF
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				(_regs.REG_F & ~(Z80_FLAG_H | Z80_FLAG_N | Z80_FLAG_F3 | Z80_FLAG_F5))
-				| (_regs.REG_A & (Z80_FLAG_F3 | Z80_FLAG_F5))
+				| (((_regs.Q ^ _regs.REG_F) | _regs.REG_A) & (Z80_FLAG_F3 | Z80_FLAG_F5))
 				| Z80_FLAG_C;
 			reset();
 			break;
 		case 0b111: // CCF
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				(
 					(_regs.REG_F & ~(Z80_FLAG_H | Z80_FLAG_N | Z80_FLAG_F3 | Z80_FLAG_F5))
 					| (((_regs.REG_F >> Z80_FLAGBIT_C) & 1) << Z80_FLAGBIT_H)
-					| (_regs.REG_A & (Z80_FLAG_F3 | Z80_FLAG_F5))
+					| (((_regs.Q ^ _regs.REG_F) | _regs.REG_A) & (Z80_FLAG_F3 | Z80_FLAG_F5))
 				)
 				^ Z80_FLAG_C;
 			reset();

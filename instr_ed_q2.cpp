@@ -22,7 +22,7 @@ void z80_instr_decoder::exec_blk_ld() {
 		}
 		_regs.REG_BC--;
 		_regs.REG_Z += _regs.REG_A; // for simulating F3 and F5 flag behaviour
-		_regs.REG_F =
+		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_C | Z80_FLAG_Z | Z80_FLAG_S))
 			| ((_regs.REG_Z & (1 << 1)) << Z80_FLAGBIT_F5)
 			| (_regs.REG_Z & Z80_FLAG_F3) // we can just copy this one (same bit position)
@@ -54,7 +54,7 @@ void z80_instr_decoder::exec_blk_cp() {
 			uint8_t carry = _regs.REG_F & Z80_FLAG_C; // save old carry flag since ALU stub modifies it
 			uint8_t y = _y; _y = 0b111; exec_alu_stub(); _y = y; // use CP from ALU stub for S, N, Z and H
 			_regs.REG_Z = _regs.REG_A - _regs.REG_Z - ((_regs.REG_F >> Z80_FLAGBIT_H) & 1); // for simulating F3 and F5 flag behaviour
-			_regs.REG_F =
+			_regs.Q = _regs.REG_F =
 				(_regs.REG_F & (Z80_FLAG_S | Z80_FLAG_N | Z80_FLAG_Z | Z80_FLAG_H))
 				| carry // restore carry flag
 				| ((_regs.REG_Z & (1 << 1)) << Z80_FLAGBIT_F5)
@@ -90,7 +90,7 @@ void z80_instr_decoder::exec_blk_in() {
 	case 3:
 		if (_y & 1) _regs.REG_HL--; else _regs.REG_HL++;
 		_regs.REG_B--;
-		_regs.REG_F =
+		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_C | Z80_FLAG_S | Z80_FLAG_H | Z80_FLAG_PV)) // NOTE: S, H and PV are undefined
 			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5)) // TODO: check if this is correct
 			| ((bool)!_regs.REG_B << Z80_FLAGBIT_Z);
@@ -120,7 +120,7 @@ void z80_instr_decoder::exec_blk_out() {
 	case 3:
 		if (_y & 1) _regs.REG_HL--; else _regs.REG_HL++;
 		_regs.REG_B--;
-		_regs.REG_F =
+		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_C | Z80_FLAG_S | Z80_FLAG_H | Z80_FLAG_PV)) // NOTE: S, H and PV are undefined
 			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5)) // TODO: check if this is correct
 			| ((bool)!_regs.REG_B << Z80_FLAGBIT_Z);
@@ -140,6 +140,7 @@ void z80_instr_decoder::exec_ed_q2() {
 	if (!(_y & 0b100) || (_x & 0b100)) {
 		/* empty opcode slots */
 		reset();
+		_regs.Q = 0; // not setting flags
 		return;
 	}
 

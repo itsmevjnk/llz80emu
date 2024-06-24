@@ -175,6 +175,8 @@ void z80_instr_decoder::exec_ex_stack_hl() {
 }
 
 void z80_instr_decoder::exec_main_q3() {
+	_regs.Q = 0; // not setting flags
+
 	switch (_z) {
 	case 0b000: // RET cc
 		exec_cond_ret();

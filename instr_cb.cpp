@@ -69,7 +69,7 @@ void z80_instr_decoder::exec_shift_rot() {
 			_regs.REG_Z >>= 1;
 			break;
 		}
-		_regs.REG_F =
+		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & Z80_FLAG_C) // preserve carry flag we just set above
 			| (parity(_regs.REG_Z) << Z80_FLAGBIT_PV)
 			| (_regs.REG_Z & (Z80_FLAG_F3 | Z80_FLAG_F5 | Z80_FLAG_S))
@@ -106,7 +106,7 @@ void z80_instr_decoder::exec_bit() {
 
 	if (!s) {
 		_regs.REG_Z &= (1 << _y);
-		_regs.REG_F =
+		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & Z80_FLAG_C) // preserve C only
 			| Z80_FLAG_H
 			| ((!_regs.REG_Z) ? (Z80_FLAG_Z | Z80_FLAG_PV) : 0)
@@ -120,6 +120,7 @@ void z80_instr_decoder::exec_bit() {
 }
 
 void z80_instr_decoder::exec_res() {
+	_regs.Q = 0; // not setting flags
 	uint8_t* reg = reg8(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
@@ -151,6 +152,7 @@ void z80_instr_decoder::exec_res() {
 }
 
 void z80_instr_decoder::exec_set() {
+	_regs.Q = 0; // not setting flags
 	uint8_t* reg = reg8(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
