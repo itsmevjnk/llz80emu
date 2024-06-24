@@ -30,35 +30,25 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 		uint16_t addend = *reg16(_y >> 1);
 		if (_y & 1) {
 			/* ADC */
-			_regs.REG_F &= ~Z80_FLAG_PV; // clear overflow flag first
-			if (_regs.REG_F & 1) { // add carry bit to temp register
-				addend++;
-				if (!(addend & 0x7F00)) _regs.REG_F |= Z80_FLAG_PV; // overflow (0x7Fxx -> 0x80xx or 0xFFxx -> 0x00xx) - set overflow flag here
-			}
-			tmp = _regs.REG_HL + addend;
+			tmp = _regs.REG_HL + addend + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1);
 			_regs.Q = _regs.REG_F =
 				((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result, and copy bits 3 and 5 (from high byte)
 				| (((bool)!(tmp & 0xFFFF)) << Z80_FLAGBIT_Z) // Z contains whether the result is zero
-				| ((_regs.REG_F & Z80_FLAG_PV) | ((_regs.REG_A & (1 << 15)) == (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
+				| (((_regs.REG_A & (1 << 15)) == (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
 				| (((bool)(tmp & 0xFFFF0000)) << Z80_FLAGBIT_C) // C contains whether there's a carry (unsigned overflow)
 				| (0 << Z80_FLAGBIT_N) // reset subtract flag
-				| (((bool)(((_regs.REG_A & 0x0F00) + (addend & 0x0F00)) & ~0x0F00)) << Z80_FLAGBIT_H); // crude way to detect half carry
+				| (((bool)(((_regs.REG_A & 0x0F00) + (addend & 0x0F00) + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1)) & ~0x0F00)) << Z80_FLAGBIT_H); // crude way to detect half carry
 		}
 		else {
 			/* SBC */
-			_regs.REG_F &= ~Z80_FLAG_PV; // clear overflow flag first
-			if (_regs.REG_F & 1) { // add carry bit to temp register
-				addend++;
-				if (!(addend & 0x7F00)) _regs.REG_F |= Z80_FLAG_PV; // overflow (0x7Fxx -> 0x80xx or 0xFFxx -> 0x00xx) - set overflow flag here
-			}
-			tmp = _regs.REG_A - addend;
+			tmp = _regs.REG_A - addend - ((_regs.REG_F >> Z80_FLAGBIT_C) & 1);
 			_regs.Q = _regs.REG_F =
 				((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result, and copy bits 3 and 5 (from high byte)
 				| (((bool)!(tmp & 0xFFFF)) << Z80_FLAGBIT_Z) // Z contains whether the result is zero
-				| ((_regs.REG_F & Z80_FLAG_PV) | (((_regs.REG_A & (1 << 15)) != (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV)) // PV contains whether an overflow occurs
-				| ((_regs.REG_A < addend) << Z80_FLAGBIT_C) // C contains whether there's a borrow (unsigned underflow)
+				| (((_regs.REG_A & (1 << 15)) != (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
+				| ((_regs.REG_A < (addend + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1))) << Z80_FLAGBIT_C) // C contains whether there's a borrow (unsigned underflow)
 				| (1 << Z80_FLAGBIT_N) // set subtract flag
-				| (((_regs.REG_A & 0x0F00) < (addend & 0x0F00)) << Z80_FLAGBIT_H); // crude way to detect half borrow
+				| (((_regs.REG_A & 0x0F00) < (((addend & 0x0F00) + (((addend & 0x00FF) + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1)) & 0x0100)) & 0x0F00)) << Z80_FLAGBIT_H); // crude way to detect half borrow (TODO)
 		}
 
 		_ctx.start_bogus_cycle(7);
