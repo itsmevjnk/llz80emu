@@ -156,17 +156,28 @@ void z80_instr_decoder::exec_ld_i16() {
 }
 
 void z80_instr_decoder::exec_add_hl_r16() {
+	uint16_t* hl = &_regs.REG_HL;
+	switch (_mod) {
+	case Z80_MOD_DD:
+		hl = &_regs.REG_IX;
+		break;
+	case Z80_MOD_FD:
+		hl = &_regs.REG_IY;
+		break;
+	default:
+		break;
+	}
 	if (!_step) {
 		uint16_t reg = *reg16(_y >> 1); // register to add to HL
-		_regs.MEMPTR = _regs.REG_HL + 1;
-		uint32_t tmp = _regs.REG_HL + reg; // temporary result register
+		_regs.MEMPTR = *hl + 1;
+		uint32_t tmp = *hl + reg; // temporary result register
 		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & (Z80_FLAG_S | Z80_FLAG_Z | Z80_FLAG_PV)) // S, Z and P/V are unaffected
 			| ((tmp >> 8) & (Z80_FLAG_F3 | Z80_FLAG_F5)) // copy bits 3 and 5 from high byte
 			| (((bool)(tmp & 0xFFFF0000)) << Z80_FLAGBIT_C) // C contains whether there's a carry (unsigned overflow)
 			| (0 << Z80_FLAGBIT_N) // reset subtract flag
-			| (((bool)(((_regs.REG_HL & 0x0FFF) + (reg & 0x0FFF)) & 0xF000)) << Z80_FLAGBIT_H); // crude way to detect half carry
-		_regs.REG_HL = (uint16_t)tmp; // commit result to HL
+			| (((bool)(((*hl & 0x0FFF) + (reg & 0x0FFF)) & 0xF000)) << Z80_FLAGBIT_H); // crude way to detect half carry
+		*hl = (uint16_t)tmp; // commit result to HL
 
 		_ctx.start_bogus_cycle(7); // insert 7 bogus cycles here (since we did everything in one cycle now)
 	} else reset();
