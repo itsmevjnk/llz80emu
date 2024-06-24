@@ -43,7 +43,7 @@ z80_pins_t z80emu::clock(z80_pinbits_t state) {
 					/* NMI triggered */
 					_regs.iff2 = _regs.iff1; _regs.iff1 = false; // disable interrupt while keeping former IFF1 state in IFF2
 					_nmiff = false; _nmi_pending = true; // clear NMI flip-flop (so it can be re-activated at some other point), then stage NMI servicing
-					if (!(_pins.state & Z80_HALT)) _regs.REG_PC++; // if we're halting and an interrupt occurred, we'll need to bring ourselves out of the HALT instruction
+					// if (!(_pins.state & Z80_HALT)) _regs.REG_PC++; // if we're halting and an interrupt occurred, we'll need to bring ourselves out of the HALT instruction
 					return _pins; // after this, a fetch cycle will be issued as normal, but it won't be followed by a normal instruction decode/execution
 				}
 

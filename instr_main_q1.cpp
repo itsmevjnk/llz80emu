@@ -10,7 +10,7 @@ void z80_instr_decoder::exec_main_q1() {
 	if(_regs.instr == 0x76) {
 		if (_mod == Z80_MOD_NONE) {
 			// HALT
-			_regs.REG_PC--;
+			// _regs.REG_PC--;
 			reset(true);
 			return;
 		}

@@ -36,7 +36,7 @@ bool z80_fetch_cycle::clock(bool clk) {
 		if (_wait) _t--; // stay in T2
 		else {
 			if (!_halt) _regs.instr = (uint8_t)((_pins.state & Z80_D_ALL) >> Z80_PIN_D_BASE); // sample Dx pins and store them in the instruction register (only if we're not halting)
-			else _regs.instr = 0x76; // continue halting
+			else _regs.instr = 0x00; // continue halting (by executing NOPs)
 			_pins.state =
 				((_pins.state | (Z80_MREQ | Z80_RD | Z80_M1)) // set MREQ, RD, M1
 				& ~(Z80_RFSH | Z80_A_ALL)) // clear RFSH and address lines
@@ -54,7 +54,7 @@ bool z80_fetch_cycle::clock(bool clk) {
 		_pins.state =
 			(_pins.state | Z80_MREQ) //  set MREQ (ending refresh)
 			& ~(0xFF << Z80_PIN_A_BASE); // clear low address lines (seems to be unexplained)
-		_regs.REG_PC++;
+		if (!_halt) _regs.REG_PC++;
 		// address line and RFSH must be reset by the next cycle
 		if (!_bus_release) return true;
 		break;
