@@ -3,7 +3,7 @@
 
 using namespace llz80emu;
 
-void z80_instr_decoder::exec_alu_stub() {
+void z80_instr_decoder::exec_alu_stub(bool do_reset) {
 	/* perform ALU op and save to tmp */
 	uint16_t tmp = 0;
 	switch (_y) {
@@ -83,7 +83,7 @@ void z80_instr_decoder::exec_alu_stub() {
 	}
 	if (_y != 0b111) _regs.REG_A = tmp & 0xFF; // CP discards the result
 	_regs.Q = _regs.REG_F;
-	reset();
+	if (do_reset) reset();
 }
 
 void z80_instr_decoder::exec_main_q2() {

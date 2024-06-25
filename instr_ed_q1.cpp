@@ -10,6 +10,7 @@ void z80_instr_decoder::exec_io_r8(bool out) {
 		else _ctx.start_io_read_cycle(_regs.REG_BC, _regs.REG_Z); // we'll copy the result to the destination register later
 		break;
 	default:
+		_regs.MEMPTR = _regs.REG_BC + 1;
 		if (!out) {
 			/* IN - affect flags */
 			_regs.Q = _regs.REG_F =
@@ -19,7 +20,7 @@ void z80_instr_decoder::exec_io_r8(bool out) {
 				| (parity(_regs.REG_Z) << Z80_FLAGBIT_PV);
 			if (_y != 0b110) *reg8(_y) = _regs.REG_Z; // copy result
 		}
-		_regs.MEMPTR = _regs.REG_BC + 1;
+		else _regs.Q = 0;
 		reset();
 		break;
 	}
@@ -29,29 +30,31 @@ void z80_instr_decoder::exec_adc_sbc_hl_r16() {
 	if (!_step) {
 		uint32_t tmp = 0;
 		uint16_t addend = *reg16(_y >> 1);
-		_regs.MEMPTR = _regs.REG_HL + 1;
+		_regs.MEMPTR = _regs.REG_HL + 1; // ED offset doesn't deal with modifiers so we can just use HL here
+		uint8_t carry = ((_regs.REG_F >> Z80_FLAGBIT_C) & 1);
 		if (_y & 1) {
 			/* ADC */
-			tmp = _regs.REG_HL + addend + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1);
+			tmp = _regs.REG_HL + addend + carry;
 			_regs.Q = _regs.REG_F =
 				((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result, and copy bits 3 and 5 (from high byte)
 				| (((bool)!(tmp & 0xFFFF)) << Z80_FLAGBIT_Z) // Z contains whether the result is zero
-				| (((_regs.REG_A & (1 << 15)) == (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
+				| (((_regs.REG_HL & (1 << 15)) == (addend & (1 << 15)) && (_regs.REG_HL & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
 				| (((bool)(tmp & 0xFFFF0000)) << Z80_FLAGBIT_C) // C contains whether there's a carry (unsigned overflow)
 				| (0 << Z80_FLAGBIT_N) // reset subtract flag
-				| (((bool)(((_regs.REG_A & 0x0F00) + (addend & 0x0F00) + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1)) & ~0x0F00)) << Z80_FLAGBIT_H); // crude way to detect half carry
+				| (((bool)(((_regs.REG_HL & 0x0FFF) + (addend & 0x0FFF) + carry) & 0xF000)) << Z80_FLAGBIT_H); // crude way to detect half carry
 		}
 		else {
 			/* SBC */
-			tmp = _regs.REG_A - addend - ((_regs.REG_F >> Z80_FLAGBIT_C) & 1);
+			tmp = _regs.REG_HL - addend - carry;
 			_regs.Q = _regs.REG_F =
 				((tmp >> 8) & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5)) // S = MSB of result, and copy bits 3 and 5 (from high byte)
 				| (((bool)!(tmp & 0xFFFF)) << Z80_FLAGBIT_Z) // Z contains whether the result is zero
-				| (((_regs.REG_A & (1 << 15)) != (addend & (1 << 15)) && (_regs.REG_A & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
-				| ((_regs.REG_A < (addend + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1))) << Z80_FLAGBIT_C) // C contains whether there's a borrow (unsigned underflow)
+				| (((_regs.REG_HL & (1 << 15)) != (addend & (1 << 15)) && (_regs.REG_HL & (1 << 15)) != (tmp & (1 << 15))) << Z80_FLAGBIT_PV) // PV contains whether an overflow occurs
+				| ((_regs.REG_HL < (addend + carry)) << Z80_FLAGBIT_C) // C contains whether there's a borrow (unsigned underflow)
 				| (1 << Z80_FLAGBIT_N) // set subtract flag
-				| (((_regs.REG_A & 0x0F00) < (((addend & 0x0F00) + (((addend & 0x00FF) + ((_regs.REG_F >> Z80_FLAGBIT_C) & 1)) & 0x0100)) & 0x0F00)) << Z80_FLAGBIT_H); // crude way to detect half borrow (TODO)
+				| (((_regs.REG_HL & 0x0FFF) < (((addend & 0x0FFF) + carry))) << Z80_FLAGBIT_H); // crude way to detect half borrow
 		}
+		_regs.REG_HL = (uint16_t)tmp;
 
 		_ctx.start_bogus_cycle(7);
 	}
@@ -95,7 +98,10 @@ void z80_instr_decoder::exec_ld_ir() {
 				| (_regs.REG_A & (Z80_FLAG_S | Z80_FLAG_F3 | Z80_FLAG_F5))
 				| (!_regs.REG_A << Z80_FLAGBIT_Z);
 		}
-		else ir = _regs.REG_A; // LD I/R,A
+		else {
+			ir = _regs.REG_A; // LD I/R,A
+			_regs.Q = 0;
+		}
 		_ctx.start_bogus_cycle(1);
 	}
 	else reset();
@@ -110,18 +116,27 @@ void z80_instr_decoder::exec_bcd_rotate() {
 		_regs.REG_W = _regs.REG_A;
 		if (_y & 1) {
 			/* RLD */
-			_regs.REG_WZ = (_regs.REG_WZ << 4) | ((_regs.REG_WZ & 0xF000) >> 12);
+			_regs.REG_WZ = (_regs.REG_WZ << 4) | ((_regs.REG_WZ & 0x0F00) >> 8);
 		}
 		else {
 			/* RRD */
 			_regs.REG_WZ = ((_regs.REG_WZ >> 4) & 0x0FF) | ((_regs.REG_WZ & 0x000F) << 8);
 		}
 		_regs.REG_A = (_regs.REG_A & 0xF0) | (_regs.REG_W & 0x0F);
+#if defined(LLZ80EMU_RXD_ALT_TIMING)
+		_ctx.start_bogus_cycle(1);
+#else
 		_ctx.start_bogus_cycle(4);
+#endif
 		break;
 	case 2:
 		_ctx.start_mem_write_cycle(_regs.REG_HL, _regs.REG_Z);
 		break;
+#if defined(LLZ80EMU_RXD_ALT_TIMING)
+	case 3:
+		_ctx.start_bogus_cycle(3);
+		break;
+#endif
 	default:
 		_regs.Q = _regs.REG_F =
 			(_regs.REG_F & Z80_FLAG_C)

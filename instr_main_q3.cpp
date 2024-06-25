@@ -167,19 +167,33 @@ void z80_instr_decoder::exec_rst() {
 void z80_instr_decoder::exec_ex_stack_hl() {
 	switch (_step) {
 	case 0: // first pop to WZ
-		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_Z);
+		_ctx.start_mem_read_cycle(_regs.REG_SP + 0, _regs.REG_Z);
 		break;
 	case 1:
-		_ctx.start_mem_read_cycle(_regs.REG_SP++, _regs.REG_W);
+		_ctx.start_mem_read_cycle(_regs.REG_SP + 1, _regs.REG_W);
 		break;
-	case 2: // then push HL to stack
-		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_H);
+	case 2:
+		_ctx.start_bogus_cycle(1); // don't forget the extra clock cycle!
 		break;
+#if defined(LLZ80EMU_EX_SPHL_ALT_TIMING)
+	case 4:
+#else
+	case 3: // then push HL to stack
+#endif
+		_ctx.start_mem_write_cycle(_regs.REG_SP + 1, *reg8(4));
+		break;
+#if defined(LLZ80EMU_EX_SPHL_ALT_TIMING)
 	case 3:
-		_ctx.start_mem_write_cycle(--_regs.REG_SP, _regs.REG_L);
+#else
+	case 4:
+#endif
+		_ctx.start_mem_write_cycle(_regs.REG_SP + 0, *reg8(5));
+		break;
+	case 5:
+		_regs.MEMPTR = *reg16(2) = _regs.REG_WZ; // do the exchange
+		_ctx.start_bogus_cycle(2);
 		break;
 	default:
-		_regs.MEMPTR = _regs.REG_HL = _regs.REG_WZ; // do the exchange
 		reset();
 		break;
 	}
@@ -204,14 +218,14 @@ void z80_instr_decoder::exec_main_q3() {
 			swap(_regs.REG_HL, _regs.REG_HL_S);
 			reset();
 			break;
-		case 0b10: // JP HL
-			_regs.REG_PC = _regs.REG_HL;
+		case 0b10: // JP HL/IX/IY
+			_regs.REG_PC = *reg16(2);
 			reset();
 			break;
 		case 0b11: // LD SP, HL
 			if (!_step) _ctx.start_bogus_cycle(2); // 2 bogus cycles following opcode fetch
 			else {
-				_regs.REG_SP = _regs.REG_HL;
+				_regs.REG_SP = *reg16(2);
 				reset();
 			}
 			break;

@@ -41,7 +41,7 @@ void z80_instr_decoder::exec_dec_r8() {
 		switch (_step) {
 		case 0: // initiate read from HL to Z
 			if (!process_hlptr()) return;
-			_ctx.start_mem_read_cycle(_regs.REG_HL, _regs.REG_Z);
+			_ctx.start_mem_read_cycle(_hl_ptr, _regs.REG_Z);
 			return;
 		case 1: // set r to Z instead
 			r = &_regs.REG_Z;
@@ -189,7 +189,13 @@ void z80_instr_decoder::exec_ld_i8() {
 	uint8_t* r = reg8(_y); // register to write to
 	switch (_step) {
 	case 0:
-		if (!r && !process_hlptr(0, false)) return; // we need _hl_ptr but it's not ready yet (note that we don't want process_hlptr to inject bogus cycles nor set _hlptr_ready here - we'll do that ourselves)
+		if (!r && !process_hlptr(
+#if defined(LLZ80EMU_LDI8_DDFD_ALT_TIMING) // alternate timing with extra clock cycles before value read (for running JSMoo test cases)
+			2, true
+#else
+			0, false
+#endif
+		)) return; // we need _hl_ptr but it's not ready yet (note that we don't want process_hlptr to inject bogus cycles nor set _hlptr_ready here - we'll do that ourselves)
 		_ctx.start_mem_read_cycle(_regs.REG_PC++, (r) ? *r : _regs.REG_Z); // read directly into the register if it's not (HL); otherwise, we read into a temporary one
 		break;
 	case 1:

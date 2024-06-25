@@ -35,15 +35,7 @@ void z80_instr_decoder::start() {
 				}
 				else {
 					/* DD/FD prefix - read d offset, then perform pseudo opcode fetch */
-					if (!_mod_d_ready) process_hlptr(0, false); // read displacement byte - we'll defer the HL pointer calculation after the pseudo opcode fetch
-					else if (!_mod_cb_fetched) {
-						_ctx.start_mem_read_cycle(_regs.REG_PC++, _mod_cb_instr); // pseudo opcode fetch
-						_mod_cb_fetched = true;
-					}
-					else if (process_hlptr(2)) { // 2 extra clock cycles following pseudo opcode fetch
-						_regs.instr = _mod_cb_instr;
-						break;
-					}
+					process_hlptr(0, false); // read displacement byte - we'll defer the HL pointer calculation after the pseudo opcode fetch
 				}
 				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
 				return;
@@ -51,6 +43,22 @@ void z80_instr_decoder::start() {
 				_subset = Z80_SUBSET_ED;
 				_mod = Z80_MOD_NONE; // 0xED prefix disregards 0xDD/FD prefixes
 				_ctx.start_fetch_cycle();
+				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
+				return;
+			}
+		}
+
+		if (_subset == Z80_SUBSET_CB && _mod != Z80_MOD_NONE) {
+			if (!_mod_cb_fetched) {
+				_ctx.start_mem_read_cycle(_regs.REG_PC++, _mod_cb_instr); // pseudo opcode fetch
+				_mod_cb_fetched = true;
+				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
+				return;
+			}
+			else if (process_hlptr(2)) { // 2 extra clock cycles following pseudo opcode fetch
+				_regs.instr = _mod_cb_instr;
+			}
+			else {
 				_ctx.skip_int_handling(); _ctx.skip_nmi_handling();
 				return;
 			}

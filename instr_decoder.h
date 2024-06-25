@@ -176,7 +176,7 @@ namespace llz80emu {
 
 		/* main quadrant 2 (xx = 10) - ALU operations */
 		void exec_main_q2();
-		void exec_alu_stub(); // run ALU operations with operand in Z register and operation selector in _y (for sharing with main quadrant 3)
+		void exec_alu_stub(bool do_reset = true); // run ALU operations with operand in Z register and operation selector in _y (for sharing with main quadrant 3)
 
 		/* main quadrant 3 (xx = 11) */
 		void exec_main_q3();
