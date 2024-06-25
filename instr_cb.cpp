@@ -21,7 +21,7 @@ void z80_instr_decoder::exec_cb() {
 }
 
 void z80_instr_decoder::exec_shift_rot() {
-	uint8_t* reg = reg8(_z); // NULL for (HL)
+	uint8_t* reg = reg8_nomod(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
 		if (!reg || _mod != Z80_MOD_NONE) {
@@ -32,7 +32,7 @@ void z80_instr_decoder::exec_shift_rot() {
 		else _regs.REG_Z = *reg; // copy register to Z to work on
 	}
 
-	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+	if (!reg || _mod != Z80_MOD_NONE) s--; // back by 1 step (1st step is reading into Z)
 
 	if (!s) {
 		uint8_t carry = (_regs.REG_F >> Z80_FLAGBIT_C) & 1; // old carry bit
@@ -92,7 +92,7 @@ void z80_instr_decoder::exec_shift_rot() {
 }
 
 void z80_instr_decoder::exec_bit() {
-	uint8_t* reg = reg8(_z); // NULL for (HL)
+	uint8_t* reg = reg8_nomod(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
 		if (!reg || _mod != Z80_MOD_NONE) {
@@ -103,7 +103,7 @@ void z80_instr_decoder::exec_bit() {
 		else _regs.REG_Z = *reg; // copy register to Z to work on
 	}
 
-	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+	if (!reg || _mod != Z80_MOD_NONE) s--; // back by 1 step (1st step is reading into Z)
 
 	if (!s) {
 		_regs.Q =
@@ -125,7 +125,7 @@ void z80_instr_decoder::exec_bit() {
 
 void z80_instr_decoder::exec_res() {
 	_regs.Q = 0; // not setting flags
-	uint8_t* reg = reg8(_z); // NULL for (HL)
+	uint8_t* reg = reg8_nomod(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
 		if (!reg || _mod != Z80_MOD_NONE) {
@@ -136,7 +136,7 @@ void z80_instr_decoder::exec_res() {
 		else _regs.REG_Z = *reg; // copy register to Z to work on
 	}
 
-	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+	if (!reg || _mod != Z80_MOD_NONE) s--; // back by 1 step (1st step is reading into Z)
 	
 	if (!s) {
 		_regs.REG_Z &= ~(1 << _y);
@@ -157,7 +157,7 @@ void z80_instr_decoder::exec_res() {
 
 void z80_instr_decoder::exec_set() {
 	_regs.Q = 0; // not setting flags
-	uint8_t* reg = reg8(_z); // NULL for (HL)
+	uint8_t* reg = reg8_nomod(_z); // NULL for (HL)
 	int s = _step;
 	if (!_step) {
 		if (!reg || _mod != Z80_MOD_NONE) {
@@ -168,7 +168,7 @@ void z80_instr_decoder::exec_set() {
 		else _regs.REG_Z = *reg; // copy register to Z to work on
 	}
 
-	if (!reg) s--; // back by 1 step (1st step is reading into Z)
+	if (!reg || _mod != Z80_MOD_NONE) s--; // back by 1 step (1st step is reading into Z)
 
 	if (!s) {
 		_regs.REG_Z |= (1 << _y);
