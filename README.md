@@ -6,8 +6,13 @@ The emulator's behaviour is modeled using information from the following sources
 * [Z80 netlist simulation details](https://floooh.github.io/2021/12/06/z80-instruction-timing.html)
 * [Z80 opcode table](https://clrhome.org/table/)
 * [Z80 flag affection](http://www.z80.info/z80sflag.htm)
+* [Documentation on the undocumented MEMPTR register](https://gist.github.com/drhelius/8497817)
+* [The Undocumented Z80 Documented by Sean Young](https://gist.github.com/drhelius/8497817)
+* [David Bank's documentation on undocumented flag behaviour](https://github.com/hoglet67/Z80Decoder/wiki/Undocumented-Flags)
 
 To maintain emulation performance and simplicity, the inner operation (ie. during instruction execution) is not accurately modeled; however, the emulator should have the same number of cycles and behaviour for instructions as a real Z80 CPU.
+
+The emulator passes [raddad772's Z80 unit tests](https://github.com/SingleStepTests/z80) (and the former [JSMoo](https://github.com/raddad772/jsmoo)), albeit with [some instruction timing discrepancies](https://github.com/SingleStepTests/z80/issues/3). The emulator also passes all `zexall` tests.
 
 ## Installation
 
@@ -29,8 +34,6 @@ The emulator provides the following publicly accessible methods in the `z80emu` 
 ## Contributing
 
 Pull requests and discussions/bug reports through [Issues](https://github.com/itsmevjnk/llz80emu/issues) are welcome.
-
-As of now, the emulator has not been thoroughly tested for cycle and behaviour accuracy, so testing are highly welcome. Testing results can be submitted and discussed as an issue in this repository.
 
 ## License
 
