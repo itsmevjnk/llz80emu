@@ -8,10 +8,12 @@
 /* dllexport/dllimport macro for Windows */
 #if !defined(LLZ80EMU_API) // allow overriding
 
-#if defined(LLZ80EMU_BUILD_DLL) // compiling DLL
+#if (defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)) && (defined(LLZ80EMU_BUILD_SHARED) || defined(LLZ80EMU_USE_SHARED))
+#if defined(LLZ80EMU_BUILD_SHARED) // compiling DLL
 #define LLZ80EMU_API __declspec(dllexport)
-#elif !defined(LLZ80EMU_BUILD_STATIC) && (defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)) // consuming DLL
+#else // consuming DLL
 #define LLZ80EMU_API __declspec(dllimport)
+#endif
 #else
 #define LLZ80EMU_API // dllexport/dllimport not needed
 #endif
