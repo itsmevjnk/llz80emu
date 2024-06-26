@@ -7,6 +7,7 @@ namespace llz80emu {
 	class z80_cycle {
 	public:
 		z80_cycle(z80_pins_t& pins);
+		const int& t = _t; // T cycle number (constant - for access by z80emu)
 
 		virtual bool clock(bool clk); // clock the CPU by one half-cycle (rising edge or falling edge) - this will be called by z80emu::clock(), and will return true if the cycle has finished
 	protected:

@@ -15,17 +15,33 @@ z80_pins_t z80emu::clock(z80_pinbits_t state) {
 	_clkpin = !_clkpin; // toggle clock pin
 
 	_pins.state = (_pins.state & _pins.dir) | (state & ~_pins.dir); // update pin state (only replacing input pin bits)
-	if (!(_pins.state & Z80_RESET)) {
-		/* reset pin pulled low */
-		_por = true;
-		_cycle = nullptr; // stop current cycle
-		_pins = Z80_PINS_INIT; // reset pins
-		memset(&_regs, 0, sizeof(_regs)); _regs.REG_SP = _regs.REG_AF = 0xFFFF; // reset registers
+	if (_clkpin) {
+		/* handle reset logic */
+
+		if (!(_pins.state & Z80_RESET)) {
+			/* reset pin pulled low */
+			_por = true;
+			_pins = Z80_PINS_INIT; // reset pins
+
+			_reset_m1t2 = (dynamic_cast<z80_fetch_cycle*>(_cycle) && _cycle->t == 0); _reset_cycles++;
+			_cycle = nullptr; // stop current cycle
+		}
+		else if (_por && !_cycle) {
+			if (_reset_cycles == 1 && _reset_m1t2) {
+				/* RESET was only held for 1 cycle during M1T2 - special reset */
+				_regs.REG_PC = 0;
+			}
+			else {
+				/* normal reset */
+				memset(&_regs, 0, sizeof(_regs)); _regs.REG_SP = _regs.REG_AF = 0xFFFF;
+			}
+
+			/* rising edge and still in reset - get out of reset now (and also synchronise with clock pin) */
+			start_fetch_cycle();
+			_reset_cycles = 0;
+		}
 	}
-	else if (_clkpin && _por && !_cycle) {
-		/* rising edge and still in reset - get out of reset now (and also synchronise with clock pin) */
-		start_fetch_cycle();
-	}
+	
 
 	if (_cycle) {
 		if (_clkpin) _intpin = !(_pins.state & Z80_INT); // sample INT pin

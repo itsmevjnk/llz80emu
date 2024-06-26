@@ -74,5 +74,8 @@ namespace llz80emu {
 		bool _nmiff = false; // state of the NMI flip-flop (true = active)
 		bool _nmi_skip = false; // set to skip NMI handling (for emulating NONI)
 		bool _nmi_pending = false; // set when NMI flip-flop activity has been acknowledged, but the interrupt is not serviced yet (ie. doing bogus fetch + PC stack pushes)
+	
+		int _reset_cycles = 0; // number of cycles that RESET has been held low
+		bool _reset_m1t2 = false; // set if RESET was asserted on M1T2 rising edge (possibly special reset) - this will be confirmed with _reset_cycles
 	};
 }
