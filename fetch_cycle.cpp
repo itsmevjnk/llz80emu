@@ -51,9 +51,10 @@ bool z80_fetch_cycle::clock(bool clk) {
 		sample_busreq();
 		break;
 	case 7: // T4 low
-		_pins.state =
-			(_pins.state | Z80_MREQ) //  set MREQ (ending refresh)
-			& ~(0xFF << Z80_PIN_A_BASE); // clear low address lines (seems to be unexplained)
+		//_pins.state =
+		//	(_pins.state | Z80_MREQ); //  set MREQ (ending refresh)
+		//	& ~(0xFF << Z80_PIN_A_BASE); // clear low address lines (seems to be unexplained)
+		_pins.state |= Z80_MREQ; // end refresh
 		if (!_halt) _regs.REG_PC++;
 		// address line and RFSH must be reset by the next cycle
 		if (!_bus_release) return true;
