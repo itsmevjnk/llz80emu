@@ -4,7 +4,7 @@ using namespace llz80emu;
 
 /* read cycle base class methods */
 
-z80_read_cycle::z80_read_cycle(z80_pins_t& pins) : z80_cycle(pins) {
+z80_read_cycle::z80_read_cycle(z80_pins_t& pins, z80_cycle_type_t cyc_type) : z80_cycle(pins, cyc_type) {
 
 }
 
@@ -17,7 +17,7 @@ void z80_read_cycle::reset(uint16_t addr, uint8_t& val_out) {
 
 /* write cycle base class methods */
 
-z80_write_cycle::z80_write_cycle(z80_pins_t& pins) : z80_cycle(pins) {
+z80_write_cycle::z80_write_cycle(z80_pins_t& pins, z80_cycle_type_t cyc_type) : z80_cycle(pins, cyc_type) {
 
 }
 

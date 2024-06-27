@@ -2,7 +2,7 @@
 
 using namespace llz80emu;
 
-z80_cycle::z80_cycle(z80_pins_t& pins) : _pins(pins) {
+z80_cycle::z80_cycle(z80_pins_t& pins, z80_cycle_type_t cyc_type) : _pins(pins), type(cyc_type) {
 
 }
 

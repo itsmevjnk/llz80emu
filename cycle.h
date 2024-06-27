@@ -4,10 +4,21 @@
 #include "registers.h"
 
 namespace llz80emu {
+	typedef enum {
+		Z80_FETCH_CYCLE,
+		Z80_MEM_READ_CYCLE,
+		Z80_MEM_WRITE_CYCLE,
+		Z80_IO_READ_CYCLE,
+		Z80_IO_WRITE_CYCLE,
+		Z80_BOGUS_CYCLE,
+		Z80_INTACK_CYCLE
+	} z80_cycle_type_t;
+
 	class z80_cycle {
 	public:
-		z80_cycle(z80_pins_t& pins);
+		z80_cycle(z80_pins_t& pins, z80_cycle_type_t cyc_type);
 		const int& t = _t; // T cycle number (constant - for access by z80emu)
+		const z80_cycle_type_t type;
 
 		virtual bool clock(bool clk); // clock the CPU by one half-cycle (rising edge or falling edge) - this will be called by z80emu::clock(), and will return true if the cycle has finished
 	protected:
@@ -35,7 +46,7 @@ namespace llz80emu {
 
 	class z80_read_cycle : public z80_cycle {
 	public:
-		z80_read_cycle(z80_pins_t& pins);
+		z80_read_cycle(z80_pins_t& pins, z80_cycle_type_t cyc_type);
 
 		void reset(uint16_t addr, uint8_t& val_out);
 	protected:
@@ -46,7 +57,7 @@ namespace llz80emu {
 
 	class z80_write_cycle : public z80_cycle {
 	public:
-		z80_write_cycle(z80_pins_t& pins);
+		z80_write_cycle(z80_pins_t& pins, z80_cycle_type_t cyc_type);
 
 		void reset(uint16_t addr, uint8_t val);
 	protected:

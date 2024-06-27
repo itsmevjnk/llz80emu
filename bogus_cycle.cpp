@@ -2,7 +2,7 @@
 
 using namespace llz80emu;
 
-z80_bogus_cycle::z80_bogus_cycle(z80_pins_t& pins, z80_registers_t& regs) : z80_cycle(pins), _regs(regs) {
+z80_bogus_cycle::z80_bogus_cycle(z80_pins_t& pins, z80_registers_t& regs) : z80_cycle(pins, Z80_BOGUS_CYCLE), _regs(regs) {
 
 }
 

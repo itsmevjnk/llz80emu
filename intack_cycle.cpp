@@ -1,9 +1,12 @@
 #include "cycle.h"
+
+#if !defined(NO_EXCEPTIONS)
 #include <stdexcept>
+#endif
 
 using namespace llz80emu;
 
-z80_intack_cycle::z80_intack_cycle(z80_pins_t& pins, z80_registers_t& regs) : z80_cycle(pins), _regs(regs) {
+z80_intack_cycle::z80_intack_cycle(z80_pins_t& pins, z80_registers_t& regs) : z80_cycle(pins, Z80_INTACK_CYCLE), _regs(regs) {
 
 }
 
@@ -62,7 +65,12 @@ bool z80_intack_cycle::clock(bool clk) {
 		if (!_bus_release) return true;
 		break;
 	default:
-		if (!handle_bus_release(clk)) throw std::runtime_error("Invalid T cycle - no transition has occurred from interrupt acknowledgment cycle?");
+		if (!handle_bus_release(clk))
+#if defined(NO_EXCEPTIONS)
+			abort();
+#else
+			throw std::runtime_error("Invalid T cycle - no transition has occurred from interrupt acknowledgment cycle?");
+#endif
 		else if (!clk && !_bus_release) return true;
 		break;
 	}

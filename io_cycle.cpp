@@ -1,11 +1,14 @@
 #include "cycle.h"
+
+#if !defined(NO_EXCEPTIONS)
 #include <stdexcept>
+#endif
 
 using namespace llz80emu;
 
 /* I/O read */
 
-z80_io_read_cycle::z80_io_read_cycle(z80_pins_t& pins) : z80_read_cycle(pins) {
+z80_io_read_cycle::z80_io_read_cycle(z80_pins_t& pins) : z80_read_cycle(pins, Z80_IO_READ_CYCLE) {
 
 }
 
@@ -42,7 +45,12 @@ bool z80_io_read_cycle::clock(bool clk) {
 		if (!_bus_release) return true;
 		break;
 	default:
-		if (!handle_bus_release(clk)) throw std::runtime_error("Invalid T cycle - no transition has occurred from I/O read cycle?");
+		if (!handle_bus_release(clk))
+#if defined(NO_EXCEPTIONS)
+			abort();
+#else
+			throw std::runtime_error("Invalid T cycle - no transition has occurred from I/O read cycle?");
+#endif
 		else if (!clk && !_bus_release) return true;
 		break;
 	}
@@ -50,7 +58,7 @@ bool z80_io_read_cycle::clock(bool clk) {
 	return false;
 }
 
-z80_io_write_cycle::z80_io_write_cycle(z80_pins_t& pins) : z80_write_cycle(pins) {
+z80_io_write_cycle::z80_io_write_cycle(z80_pins_t& pins) : z80_write_cycle(pins, Z80_IO_WRITE_CYCLE) {
 
 }
 
@@ -90,7 +98,12 @@ bool z80_io_write_cycle::clock(bool clk) {
 		if (!_bus_release) return true;
 		break;
 	default:
-		if (!handle_bus_release(clk)) throw std::runtime_error("Invalid T cycle - no transition has occurred from I/O write cycle?");
+		if (!handle_bus_release(clk))
+#if defined(NO_EXCEPTIONS)
+			abort();
+#else
+			throw std::runtime_error("Invalid T cycle - no transition has occurred from I/O write cycle?");
+#endif
 		else if (!clk && !_bus_release) return true;
 		break;
 	}

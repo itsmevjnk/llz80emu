@@ -23,7 +23,7 @@ z80_pins_t z80emu::clock(z80_pinbits_t state) {
 			_por = true;
 			_pins = Z80_PINS_INIT; // reset pins
 
-			_reset_m1t2 = (dynamic_cast<z80_fetch_cycle*>(_cycle) && _cycle->t == 0); _reset_cycles++;
+			_reset_m1t2 = (_cycle && _cycle->type == Z80_FETCH_CYCLE && _cycle->t == 0); _reset_cycles++;
 			_cycle = nullptr; // stop current cycle
 		}
 		else if (_por && !_cycle) {
