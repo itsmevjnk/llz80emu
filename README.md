@@ -12,7 +12,7 @@ The emulator's behaviour is modeled using information from the following sources
 
 To maintain emulation performance and simplicity, the inner operation (ie. during instruction execution) is not accurately modeled; however, the emulator should have the same number of cycles and behaviour for instructions as a real Z80 CPU.
 
-The emulator passes [raddad772's Z80 unit tests](https://github.com/SingleStepTests/z80) (and the former [JSMoo](https://github.com/raddad772/jsmoo)), albeit with [some instruction timing discrepancies](https://github.com/SingleStepTests/z80/issues/3). The emulator also passes all `zexall` tests.
+The emulator passes the [JSMoo](https://github.com/raddad772/jsmoo) unit test suite, albeit with [some instruction timing discrepancies](https://github.com/SingleStepTests/z80/issues/3), as well as [raddad772's Z80 unit tests](https://github.com/SingleStepTests/z80) to a slightly lesser degree due to instruction timing discrepancies (TODO: check in more detail). The emulator also passes all `zexall` tests.
 
 ## Installation
 
